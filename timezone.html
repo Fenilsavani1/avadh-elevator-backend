@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Time Zone Converter</title>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/dist/date-fns.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns-tz@1.3.8/dist/date-fns-tz.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        select, input { margin: 10px; padding: 5px; }
+        button { padding: 5px 10px; }
+        #result { margin-top: 20px; color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Time Zone Converter</h1>
+    <div>
+        <label>Date/Time: <input type="datetime-local" id="inputDate"></label>
+        <label>From Time Zone: 
+            <select id="fromTimeZone">
+                <option value="">Select Source Time Zone</option>
+            </select>
+        </label>
+        <label>To Time Zone: 
+            <select id="toTimeZone">
+                <option value="">Select Target Time Zone</option>
+            </select>
+        </label>
+        <button onclick="convertAndDisplay()">Convert</button>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        // Time zone data
+        const timeZones = [
+            {
+                "id": 1,
+                "timezone": "Etc/GMT-12",
+                "gmtOffset": "GMT-12:00",
+                "displayName": "International Date Line West"
+            },
+            {
+                "id": 2,
+                "timezone": "Pacific/Midway",
+                "gmtOffset": "GMT-11:00",
+                "displayName": "Samoa Standard Time - Pago Pago, American Samoa"
+            },
+            {
+                "id": 3,
+                "timezone": "Pacific/Honolulu",
+                "gmtOffset": "GMT-10:00",
+                "displayName": "Hawaii-Aleutian Standard Time - Honolulu, USA"
+            },
+            {
+                "id": 4,
+                "timezone": "America/Anchorage",
+                "gmtOffset": "GMT-9:00",
+                "displayName": "(GMT-9:00) Alaska Standard Time - Anchorage, USA"
+            }
+        ];
+
+        // Populate dropdowns with time zones
+        const fromSelect = document.getElementById('fromTimeZone');
+        const toSelect = document.getElementById('toTimeZone');
+        timeZones.forEach(zone => {
+            const option = document.createElement('option');
+            option.value = zone.timezone;
+            option.text = `${zone.displayName} (${zone.gmtOffset})`;
+            fromSelect.appendChild(option.cloneNode(true));
+            toSelect.appendChild(option);
+        });
+
+        /**
+         * Converts a date/time from one time zone to another.
+         * @param {Date|string} inputDate - The input date/time (Date object or ISO string).
+         * @param {string} fromTimeZone - Source IANA time zone (e.g., 'Etc/GMT-12').
+         * @param {string} toTimeZone - Target IANA time zone (e.g., 'Pacific/Honolulu').
+         * @returns {Object} - { formattedDate, gmtOffset, displayName }
+         */
+        function convertTimeZone(inputDate, fromTimeZone, toTimeZone) {
+            const fromZone = timeZones.find(zone => zone.timezone === fromTimeZone);
+            const toZone = timeZones.find(zone => zone.timezone === toTimeZone);
+
+            if (!fromZone || !toZone) {
+                throw new Error('Invalid source or target time zone');
+            }
+
+            const date = typeof inputDate === 'string' ? new Date(inputDate) : inputDate;
+            if (isNaN(date)) {
+                throw new Error('Invalid input date');
+            }
+
+            const { zonedTimeToUtc, utcToZonedTime, format } = window.dateFnsTz;
+            const utcDate = zonedTimeToUtc(date, fromTimeZone);
+            const targetDate = utcToZonedTime(utcDate, toTimeZone);
+            const formattedDate = format(targetDate, 'yyyy-MM-dd HH:mm:ss');
+
+            return {
+                formattedDate,
+                gmtOffset: toZone.gmtOffset,
+                displayName: toZone.displayName
+            };
+        }
+
+        // Display conversion result
+        function convertAndDisplay() {
+            const inputDate = document.getElementById('inputDate').value;
+            const fromTimeZone = document.getElementById('fromTimeZone').value;
+            const toTimeZone = document.getElementById('toTimeZone').value;
+            const resultDiv = document.getElementById('result');
+
+            try {
+                if (!inputDate || !fromTimeZone || !toTimeZone) {
+                    resultDiv.innerHTML = '<p style="color: red;">Please fill in all fields.</p>';
+                    return;
+                }
+
+                const result = convertTimeZone(inputDate, fromTimeZone, toTimeZone);
+                resultDiv.innerHTML = `
+                    <p>Converted Time: ${result.formattedDate}</p>
+                    <p>Time Zone: ${result.displayName} (${result.gmtOffset})</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
