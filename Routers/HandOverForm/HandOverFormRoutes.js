@@ -1,4 +1,5 @@
 const { Router } = require("express");
+const upload  = require('../../Utils/ImageUtils'); 
 
 const { HandOverForm } = require('../../Models/HandOverForm.model')
 const {createHandOverForm} = require('../../Controllers/HandOverForm/HandOverForm.controller');
@@ -6,6 +7,6 @@ const {createHandOverForm} = require('../../Controllers/HandOverForm/HandOverFor
 
 const FormRouter = Router();
 
-FormRouter.post('/handover-form', createHandOverForm);
+FormRouter.post('/handover_form', upload.array('media'), createHandOverForm);
 
 module.exports = FormRouter;

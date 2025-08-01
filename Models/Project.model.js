@@ -164,7 +164,7 @@ const ElevatorSchema = new mongoose.Schema({
     },
     status: {
         type: Number,
-        default:0,
+        default: 0,
     },
 }, {
     timestamps: true,
@@ -230,7 +230,7 @@ const MaterialItemSchema = new mongoose.Schema({
         required: true
     },
     brandName: {
-        type: String,  
+        type: String,
         required: true
     },
     orderDetailsWithQty: {
@@ -293,12 +293,49 @@ const VendorSchema = new mongoose.Schema({
 
 const Vendor = mongoose.model("vendor", VendorSchema);
 
+const PaymentEntrySchema = new mongoose.Schema({
+    id: {
+        type: mongoose.Schema.Types.ObjectId,
+        auto: true
+    },
+    project_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "project",
+        required: true
+    },
+    date: {
+        type: Date,
+        required: true
+    },
+    payment_Made: {
+        type: Number,
+        default: 0
+    },
+    payment_method: {
+        type: String,
+        enum: ['Cash', 'Cheque', 'Bank Transfer', 'UPI', 'Other'], // example values
+    },
+    payment_status: {
+        type: String,
+        enum: ['Pending', 'Completed', 'Partial', 'Failed'], // example values
+        required: true
+    },
+    paid_to: {
+        type: String,
+        required: true
+    }
+}, {
+    timestamps: true
+});
 
+const PaymentEntry = mongoose.model("PaymentEntrys", PaymentEntrySchema);
 
 module.exports = {
     Project,
     Elevators,
     PreInstallation,
     MaterialSet,
-    Vendor
+    Vendor,
+    PaymentEntry
+
 };
