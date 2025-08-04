@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 
 const HandOverFormSchema = new mongoose.Schema({
+  id : {
+    type: mongoose.Schema.Types.ObjectId,
+    auto: true
+  },
   project_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'project',

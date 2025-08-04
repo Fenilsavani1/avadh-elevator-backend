@@ -8,6 +8,7 @@ const CreateErector = async (req, res) => {
     const savedErector = await newErector.save();
     return ResponseOk(res, 201, 'Erector created successfully', savedErector);
   } catch (error) {
+    console.log("erroer", error );
     return ErrorHandler(res, 500, 'Failed to create erector', error);
   }
 };
@@ -60,12 +61,32 @@ const GetAllErectors = async (req, res) => {
   }
 };
 
+const DeleteErector = async (req, res) => {
+  try {
+    const  id  = req.query.id;
+    const deletedErector = await Erector.findByIdAndDelete(id);
+    
+    if (!deletedErector) {
+      return ErrorHandler(res, 404, 'Erector not found');
+    }
+
+    // Optionally delete related installation terms and payment records
+    await InstallationTerms.deleteMany({ erector_id: id });
+    await PaymentRecord.deleteMany({ erector_id: id });
+
+    return ResponseOk(res, 200, 'Erector deleted successfully');
+  } catch (error) {
+    return ErrorHandler(res, 500, 'Failed to delete erector', error); 
+  }
+};
+
 
 module.exports = {
   CreateErector,
   CreateInstallationTerms,
   CreatePaymentRecord,
-  GetAllErectors
+  GetAllErectors,
+  DeleteErector
 };
 
 

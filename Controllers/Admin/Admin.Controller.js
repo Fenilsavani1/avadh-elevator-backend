@@ -471,6 +471,74 @@ const ViewProjectById = async (req, res) => {
   }
 };
 
+const ManageRolePermissions = async (req, res) => {
+  try {
+    const { role_id, add_permission_ids = [], remove_permission_ids = [] } = req.body;
+
+    if (!role_id) {
+      return ErrorHandler(res, 400, "role_id is required.");
+    }
+
+    if (!Array.isArray(add_permission_ids) || !Array.isArray(remove_permission_ids)) {
+      return ErrorHandler(res, 400, "add_permission_ids and remove_permission_ids must be arrays.");
+    }
+
+    // Check if role exists
+    const roleExists = await Roles.findOne({ id: role_id });
+    if (!roleExists) {
+      return ErrorHandler(res, 404, "Role not found.");
+    }
+
+    // Validate added permissions
+    let addedPermissionIds = [];
+    if (add_permission_ids.length > 0) {
+      const validAddPermissions = await Permissions.find({ id: { $in: add_permission_ids } });
+      addedPermissionIds = validAddPermissions.map(p => p.id);
+
+      if (addedPermissionIds.length !== add_permission_ids.length) {
+        return ErrorHandler(res, 400, "One or more add_permission_ids are invalid.");
+      }
+
+      // Avoid duplicates (only insert if not already linked)
+      const existingLinks = await Role_with_permission.find({
+        role_id,
+        permission_id: { $in: addedPermissionIds }
+      });
+      const existingPermissionIds = existingLinks.map(link => link.permission_id);
+
+      const newLinks = addedPermissionIds
+        .filter(pid => !existingPermissionIds.includes(pid))
+        .map(pid => ({ role_id, permission_id: pid }));
+
+      if (newLinks.length > 0) {
+        await Role_with_permission.insertMany(newLinks);
+      }
+    }
+
+    // Remove permissions
+    if (remove_permission_ids.length > 0) {
+      await Role_with_permission.deleteMany({
+        role_id,
+        permission_id: { $in: remove_permission_ids }
+      });
+    }
+
+    const updatedLinks = await Role_with_permission.find({ role_id });
+    const finalPermissions = await Permissions.find({ id: { $in: updatedLinks.map(rp => rp.permission_id) } });
+
+    return ResponseOk(res, 200, "Role permissions updated successfully", {
+      role_id,
+      current_permissions: finalPermissions.map(p => ({
+        id: p.id,
+        permission_name: p.permission_name
+      }))
+    });
+
+  } catch (error) {
+    console.error("Error:", error);
+    return ErrorHandler(res, 500, "Server error while managing role permissions");
+  }
+};
 
 
 
@@ -489,5 +557,6 @@ module.exports = {
   UpdatePermissionAdmin,
   UpdateProjectStatus,
   DeleteProject,
-  ViewProjectById
+  ViewProjectById,
+  ManageRolePermissions
 }
