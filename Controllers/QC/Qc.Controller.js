@@ -67,6 +67,79 @@ const CreateQCEntry = async (req, res) => {
   }
 };
 
+const UpdateQCEntry = async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    if (!id) {
+      return ErrorHandler(res, 400, "Missing required query parameter: id");
+    }
+
+    const {
+      areaName,
+      date,
+      siteName,
+      jobNumber,
+      wingOrLiftNo,
+      type,
+      sideSupervisor,
+      wiremanName,
+      project_id
+    } = req.body;
+
+    if (!project_id) {
+      return ErrorHandler(res, 400, "Missing required field: project_id");
+    }
+
+    // Step 1: Build dynamic update object
+    const updateFields = {};
+    if (areaName !== undefined) updateFields.areaName = areaName;
+    if (date !== undefined) updateFields.date = date;
+    if (siteName !== undefined) updateFields.siteName = siteName;
+    if (jobNumber !== undefined) updateFields.jobNumber = jobNumber;
+    if (wingOrLiftNo !== undefined) updateFields.wingOrLiftNo = wingOrLiftNo;
+    if (type !== undefined) updateFields.type = type;
+    if (sideSupervisor !== undefined) updateFields.sideSupervisor = sideSupervisor;
+    if (wiremanName !== undefined) updateFields.wiremanName = wiremanName;
+    updateFields.project_id = project_id;
+
+    // Step 2: Update QCEntry
+    const updatedQCEntry = await QCEntry.findByIdAndUpdate(
+      id,
+      { $set: updateFields },
+      { new: true }
+    );
+
+    if (!updatedQCEntry) {
+      return ErrorHandler(res, 404, "QC Entry not found");
+    }
+
+    // Step 3: Handle file uploads
+    const uploadedFiles = req.files || [];
+
+    const imageDocs = uploadedFiles.map(file => {
+      const fileUrl = `/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`;
+      return {
+        project_id,
+        table_type: "QCEntry",
+        table_id: updatedQCEntry._id,
+        document_url: fileUrl
+      };
+    });
+
+    if (imageDocs.length > 0) {
+      await Image.insertMany(imageDocs);
+    }
+
+    return ResponseOk(res, 200, "QC Entry updated successfully", {
+      entry: updatedQCEntry,
+    });
+
+  } catch (error) {
+    console.error("Error updating QC Entry:", error);
+    return ErrorHandler(res, 500, "Server error while updating QC Entry");
+  }
+};
 
 
 const GetQCEntries = async (req, res) => {
@@ -104,8 +177,34 @@ const GetQCEntries = async (req, res) => {
   }
 };
 
+const DeleteQcEntry = async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    if (!id) {
+      return ErrorHandler(res, 400, "Missing required query parameter: id");
+    }
+
+    const deletedEntry = await QCEntry.findByIdAndDelete(id);
+
+    if (!deletedEntry) {
+      return ErrorHandler(res, 404, "QC Entry not found");
+    }
+
+    // Delete associated images
+    await Image.deleteMany({ table_type: "QCEntry", table_id: id });
+
+    return ResponseOk(res, 200, "QC Entry deleted successfully");
+  } catch (error) {
+    console.error("Error deleting QC Entry:", error);
+    return ErrorHandler(res, 500, "Server error while deleting QC Entry");
+  }
+};
+
 
 module.exports = {
   CreateQCEntry,
-  GetQCEntries
+  GetQCEntries,
+  UpdateQCEntry,
+  DeleteQcEntry
 };

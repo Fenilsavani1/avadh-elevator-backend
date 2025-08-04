@@ -95,10 +95,10 @@ const User_Associate_With_Role = mongoose.model('User_Associate_With_Role', User
 
 /** Role_with_permission Schema */
 const RolePermissionSchema = new mongoose.Schema({
-   id:{
-    type:Number,
-    required: true,
-  },
+  //  id:{
+  //   type: Number,
+  //   required: true,
+  // },
   role_id: {
     type: Number,
     required: true,

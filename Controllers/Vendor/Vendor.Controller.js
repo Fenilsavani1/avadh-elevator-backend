@@ -132,7 +132,27 @@ const getMaterialSets = async (req, res) => {
   }
 };
 
+const DeleteVendor = async (req, res) => {
+  try {
+    const { id } = req.query;
 
+    // Validate ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return ErrorHandler(res, 400, "Invalid vendor ID");
+    }
+
+    // Find and delete the vendor
+    const deletedVendor = await Vendor.findByIdAndDelete(id);
+    if (!deletedVendor) {
+      return ErrorHandler(res, 404, "Vendor not found");
+    }
+
+    return ResponseOk(res, 200, "Vendor deleted successfully", deletedVendor);
+  } catch (error) {
+    console.error("[DeleteVendor]", error);
+    return ErrorHandler(res, 500, "Server error while deleting vendor");
+  }
+};
 
 
 module.exports = {
@@ -140,5 +160,6 @@ module.exports = {
   addVendor,
   GetVendor,
   getMaterialSets,
-  UpdateVendor
+  UpdateVendor,
+  DeleteVendor
 }
