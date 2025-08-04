@@ -9,14 +9,14 @@ exports.StaticData = [
   { id: 7, data_name: "Dum Weight", type: 1 },
 
   // BrandVendorData (type: 2)
-  { id: 8, data_name: "Otis India", type: 2 },
-  { id: 9, data_name: "KONE India", type: 2 },
-  { id: 10, data_name: "Schindler India", type: 2 },
-  { id: 11, data_name: "ThyssenKrupp", type: 2 },
-  { id: 12, data_name: "Mitsubishi Electric", type: 2 },
-  { id: 13, data_name: "Local Supplier A", type: 2 },
-  { id: 14, data_name: "Local Supplier B", type: 2 },
-  { id: 15, data_name: "Custom Vendor", type: 2 },
+  // { id: 8, data_name: "Otis India", type: 2 },
+  // { id: 9, data_name: "KONE India", type: 2 },
+  // { id: 10, data_name: "Schindler India", type: 2 },
+  // { id: 11, data_name: "ThyssenKrupp", type: 2 },
+  // { id: 12, data_name: "Mitsubishi Electric", type: 2 },
+  // { id: 13, data_name: "Local Supplier A", type: 2 },
+  // { id: 14, data_name: "Local Supplier B", type: 2 },
+  // { id: 15, data_name: "Custom Vendor", type: 2 },
 
   // ByWhomData (type: 3)
   { id: 16, data_name: "Admin", type: 3 },

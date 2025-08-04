@@ -1,198 +1,154 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const ErectorSchema = new mongoose.Schema({
-  erectorName: {
-    type: String,
-    required: true,
-    trim: true,
+  project_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'project',
+    required: true
+  },
+  erector_name: {
+    type: String, required: true
   },
   date: {
-    type: Date,
-    required: true,
+    type: Date, required: true
   },
-  mobileNo: {
+  mobile_no: {
+    type: String, required: true
+  },
+  aadhar_no: {
     type: String,
-    required: true,
+    match: /^\d{12}$/,
+    default: null
   },
-  aadharNumber: {
-    type: String,
-    required: true,
-    match: /^\d{12}$/, // 12-digit Aadhar number
-    unique: true,
+  site_name: {
+    type: String
   },
-}, {
-  timestamps: true 
-});
-
-const Erector = mongoose.model("erectors", ErectorSchema);
-
-
-const ProjectSchema = new mongoose.Schema({
-  siteName: {
-    type: String,
-    required: true,
-    default: null,
+  center_name: {
+    type: String
   },
-  centerName: {
-    type: String,
-    required: true,
+  contact_no: {
+    type: String
   },
-  contractNo: {
-    type: String,
-    required: true,
+  total_lift: {
+    type: String
   },
-  totalLift: {
-    type: Number,
-    required: true,
-    min: 1,
-  },
-  typeOfLift: {
-    type: String,
-    enum: ["Passenger", "Freight", "Hospital", "Service", "Other"], // update as needed
-    required: true,
+  types_lift: {
+    type: String
   },
   location: {
-    type: String,
-    required: true,
+    type: String
   },
-  specificationOfLift: {
-    type: String,
-    required: true,
+  specification: {
+    type: String
   },
   floor: {
-    type: Number,
-    required: true,
+    type: String
   },
-  typeOfDoor: {
-    type: String,
-    required: true,
+  type_of_door: {
+    type: String
   },
-  totalFloor: {
-    type: Number,
-    required: true,
+  total_floor: {
+    type: String
   },
   block: {
-    type: String,
-    required: true,
+    type: String
   },
   passenger: {
-    type: Number,
-    required: true,
-  },
-  traOrMrl: {
     type: String,
-    enum: ["TRA", "MRL"],
-    required: true,
+    default: "8"
   },
-  scaffoldingCharges: {
+  TRA_MRL: {
     type: String,
-    enum: ["Included", "Excluded", "Not Applicable"], // change based on dropdown
-    required: true,
+    enum: ["MRL", "TRA"],
+    default: "MRL"
   },
-}, {
-  timestamps: true
-});
-
-const Project   = mongoose.model("projects", ProjectSchema);
-
-
-const  IncludedWorkSchema  = new mongoose.Schema({
-  hoistWayCharge: {
-    type: String,
-    enum: ["Included", "Excluded", "Optional"],
-    required: true,
+  Scaffolding_charges: {
+    type: String
   },
-  wiringWork: {
-    type: String,
-    enum: ["Included", "Excluded", "Optional"],
-    required: true,
+  hoist_way_charge: {
+    type: String
   },
-  otherCharges: {
-    type: String,
-    enum: ["Included", "Excluded", "Optional"],
-    required: true,
+  wiring_work: {
+    type: String
   },
-  wiringAdjustmentCharges: {
-    type: String,
-    enum: ["Included", "Excluded", "Optional"],
-    required: true,
+  other_charges: {
+    type: String
   },
-  outStationCharges: {
-    type: String,
-    enum: ["Included", "Excluded", "Optional"],
-    required: true,
+  wiring_adjustment_charges: {
+    type: String
   },
-  completionDate: {
-    type: Date,
-    required: true,
+  cut_station_charges: {
+    type: String
   },
-
-  // --- Installation & Payment Terms ---
-  totalInstallationCharges: {
-    type: Number,
-    required: true,
-  },
-  railAndDoorFramePercentage: {
-    type: Number,
-    min: 0,
-    max: 100,
-    required: true,
-  },
-  machineRopingAndDoorPercentage: {
-    type: Number,
-    min: 0,
-    max: 100,
-    required: true,
-  },
-  cabinAndLiftStartupPercentage: {
-    type: Number,
-    min: 0,
-    max: 100,
-    required: true,
-  },
-  afterHandoverPercentage: {
-    type: Number,
-    min: 0,
-    max: 100,
-    required: true,
-  },
-}, {
-  timestamps: true,
-});
-
-const IncludedWork = mongoose.model("included_works", IncludedWorkSchema );
-
-const PaymentRecordSchema  = new mongoose.Schema({
-  date: {
-    type: Date,
-    required: true,
-  },
-  amount: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  typeOfPayment: {
-    type: String,
-    enum: ["Cash", "Cheque", "Bank Transfer", "UPI", "Other"], // update as per your dropdown
-    required: true,
-  },
-  byWhom: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "users", 
-    required: true,
+  complete_date: {
+    type: Date
   }
 }, {
   timestamps: true,
+  versionKey: false
 });
 
-const PaymentRecord = mongoose.model("payment_records", PaymentRecordSchema );
+const Erector = mongoose.model('erector', ErectorSchema);
+
+const InstallationTermsSchema = new mongoose.Schema({
+  erector_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'erector',
+    required: true
+  },
+  total_charges: {
+    type: String,
+    required: true
+  },
+  rail_door_frame: {
+    type: String,
+    default: "Pending"
+  },
+  machine_roping_door: {
+    type: String
+  },
+  cabin_lift_startup: {
+    type: String
+  },
+  after_handover_lift_party: {
+    type: String
+  }
+}, {
+  timestamps: true,
+  versionKey: false
+});
+
+const InstallationTerms = mongoose.model('installation_terms', InstallationTermsSchema);
+
+
+const PaymentRecordSchema = new mongoose.Schema({
+  erector_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'erector',
+    required: true
+  },
+  date: {
+    type: Date, required: true
+  },
+  payment_amount: {
+    type: String, required: true
+  },
+  type_of_payment: {
+    type: String,
+    enum: ['Cash', 'Bank Transfer', 'Cheque', 'UPI'],
+    default: 'Cash'
+  },
+  by_whom: { type: String }  // e.g. name of person who paid
+}, {
+  timestamps: true,
+  versionKey: false
+});
+
+const PaymentRecord = mongoose.model('payment_record', PaymentRecordSchema);
 
 
 module.exports = {
-    Erector,
-    Project,
-    IncludedWork,
-    PaymentRecord
-
+  Erector,
+  InstallationTerms,
+  PaymentRecord
 }

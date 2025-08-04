@@ -79,7 +79,7 @@ exports.PermissionRolesData = [
   { id: 12, role_id: 1, permission_id: 11 }, // Edit User
   { id: 13, role_id: 1, permission_id: 12 }, // Delete User
 
-   // Manager (role_id: 3)
+   // Manager (role_id: 2)
   { id: 14, role_id: 3, permission_id: 2 },  // View Project
   { id: 15, role_id: 3, permission_id: 6 },  // View Erector
   { id: 16, role_id: 3, permission_id: 10 }, // View User
@@ -93,7 +93,7 @@ exports.PermissionRolesData = [
   { id: 24, role_id: 3, permission_id: 42 }, // View Payment
   { id: 25, role_id: 3, permission_id: 46 }, // View Handover
 
-  // Site Engineer (role_id: 4)
+  // Site Supervisor (role_id: 4)
   { id: 26, role_id: 4, permission_id: 2 },  // View Project
   { id: 27, role_id: 4, permission_id: 6 },  // View Erector
   { id: 28, role_id: 4, permission_id: 13 }, // View Dashboard

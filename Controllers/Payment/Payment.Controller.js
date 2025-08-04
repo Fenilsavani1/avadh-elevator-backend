@@ -1,4 +1,4 @@
-const { PaymentEntry } = require('../../Models/PaymentEntry.model'); 
+const PaymentEntry = require('../../Models/Project.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler'); 
 
 const createPaymentEntry = async (req, res) => {
