@@ -1,7 +1,7 @@
 const { Router } = require("express");
 
 const { Project } = require('../../Models/Project.model')
-const { createProject, ViewProject, UpdateProject } = require("../../Controllers/Project/Project.Controller");
+const { createProject, ViewProject, UpdateProject, ViewListOfSupervisors, GetProjectShortDetails } = require("../../Controllers/Project/Project.Controller");
 
 
 const ProjectRouter = Router();
@@ -9,8 +9,8 @@ const ProjectRouter = Router();
 ProjectRouter.post('/add_project', createProject);
 ProjectRouter.get('/view_project', ViewProject);
 ProjectRouter.put('/update_project', UpdateProject);
-
-
+ProjectRouter.get('/get_supervisor_list', ViewListOfSupervisors);
+ProjectRouter.get('/get_project_short_details', GetProjectShortDetails);
 
 
 module.exports = ProjectRouter;
