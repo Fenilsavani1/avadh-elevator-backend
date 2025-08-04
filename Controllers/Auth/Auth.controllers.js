@@ -110,7 +110,6 @@ const getProfile = async (req, res) => {
     if (!user_id) {
       return ResponseOk(res, 400, 'User ID is required');
     }
-
     const userData = await User_Associate_With_Role.aggregate([
       {
         $match: {
