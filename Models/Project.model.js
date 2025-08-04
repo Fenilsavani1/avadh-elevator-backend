@@ -71,6 +71,10 @@ const ElevatorSchema = new mongoose.Schema({
         ref: 'project',
         required: true,
     },
+    elevator_name: {
+        type: String,
+        required: true,
+    },
     type_of_elevator: {
         type: String,
         required: true,
@@ -313,11 +317,11 @@ const PaymentEntrySchema = new mongoose.Schema({
     },
     payment_method: {
         type: String,
-        enum: ['Cash', 'Cheque', 'Bank Transfer', 'UPI', 'Other'], // example values
+        enum: ['Cash', 'Cheque', 'Bank Transfer', 'UPI', 'Other'], 
     },
     payment_status: {
         type: String,
-        enum: ['Pending', 'Completed', 'Partial', 'Failed'], // example values
+        enum: ['Pending', 'Completed', 'Partial', 'Failed'],
         required: true
     },
     paid_to: {
@@ -328,7 +332,7 @@ const PaymentEntrySchema = new mongoose.Schema({
     timestamps: true
 });
 
-const PaymentEntry = mongoose.model("PaymentEntrys", PaymentEntrySchema);
+const PaymentEntry = mongoose.model("PaymentEntry", PaymentEntrySchema);
 
 module.exports = {
     Project,

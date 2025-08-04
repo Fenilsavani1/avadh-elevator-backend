@@ -1,17 +1,14 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
-// const db = require('../../Models/Config/mongoose.config');
-
+const mongoose = require('mongoose');
 const { ErrorHandler, ResponseOk } = require('../../Utils/ResponseHandler');
-require('dotenv').config();
 const { Op } = require('sequelize');
 const { sendToken } = require('../../Utils/TokenUtils');
-const { Users } = require('../../Models/User.model')
+const { Users, User_Associate_With_Role } = require('../../Models/User.model')
+require('dotenv').config();
 
 
 
-// Register
 const registerUser = async (req, res) => {
     try {
         const { name, email, contact_number, password } = req.body;
@@ -57,11 +54,10 @@ const registerUser = async (req, res) => {
 };
 
 
-// Login
 const loginUser = async (req, res) => {
-    const { email, contact_number, password } = req.body;
+    const { contact_number, password } = req.body;
 
-    if (!password || (!email && !contact_number)) {
+    if (!password || (!contact_number)) {
         return ErrorHandler(
             res,
             400,
@@ -72,7 +68,6 @@ const loginUser = async (req, res) => {
     try {
         const user = await Users.findOne({
             $or: [
-                email ? { email } : null,
                 contact_number ? { contact_number } : null
             ].filter(Boolean)
         });
@@ -109,7 +104,88 @@ const loginUser = async (req, res) => {
 };
 
 
+const getProfile = async (req, res) => {
+  try {
+    const user_id = req.auth.id;
+    if (!user_id) {
+      return ResponseOk(res, 400, 'User ID is required');
+    }
+
+    const userData = await User_Associate_With_Role.aggregate([
+      {
+        $match: {
+              user_id: new mongoose.Types.ObjectId(user_id)
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $lookup: {
+          from: 'roles',
+          localField: 'role_id',
+          foreignField: 'id',
+          as: 'role'
+        }
+      },
+      { $unwind: '$role' },
+      {
+        $lookup: {
+          from: 'role_with_permissions',
+          localField: 'role_id',
+          foreignField: 'role_id',
+          as: 'role_permissions'
+        }
+      },
+      {
+        $unwind: {
+          path: '$role_permissions',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'permissions',
+          localField: 'role_permissions.permission_id',
+          foreignField: 'id',
+          as: 'permissions'
+        }
+      },
+      {
+        $unwind: {
+          path: '$permissions',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: '$user._id',
+          name: { $first: '$user.name' },
+          email: { $first: '$user.email' },
+          contact_number: { $first: '$user.contact_number' },
+          role: { $first: '$role.name' },
+          permissions: { $addToSet: '$permissions.permission_name' }
+        }
+      }
+    ]);
+
+    return ResponseOk(res, 200, 'User profile fetched successfully', userData[0]);
+  } catch (error) {
+    console.log('error', error);
+    return ErrorHandler(res, 500, 'Server error while fetching profile');
+  }
+};
+
+
+
 module.exports = {
     registerUser,
     loginUser,
+    getProfile
 }

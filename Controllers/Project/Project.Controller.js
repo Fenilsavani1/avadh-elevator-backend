@@ -1,4 +1,5 @@
 const {Project} = require('../../Models/Project.model'); // Update the path as needed
+const {Users,User_Associate_With_Role} = require('../../Models/User.model'); // Assuming you have a User model for supervisors
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
 
 const createProject = async (req, res) => {
@@ -50,19 +51,134 @@ const createProject = async (req, res) => {
 };
 
 const ViewProject = async (req, res) => {
-  try { 
-    const projects = await Project.find()
-    
+  try {
+    const {
+      supervisor,
+      fromDate,
+      toDate,
+      minPayment,
+      maxPayment,
+      minReceived,
+      maxReceived,
+      minRemaining,
+      maxRemaining
+    } = req.query;
+
+    const matchStage = {};
+
+    if (supervisor) {
+      matchStage.Site_Supervisor = supervisor;
+    }
+
+    if (fromDate || toDate) {
+      matchStage.aggrement_date = {};
+      if (fromDate) matchStage.aggrement_date.$gte = new Date(fromDate);
+      if (toDate) matchStage.aggrement_date.$lte = new Date(toDate);
+    }
+
+    const projects = await Project.aggregate([
+      {
+        $lookup: {
+          from: "paymententries",
+          localField: "_id",
+          foreignField: "project_id",
+          as: "payment_details"
+        }
+      },
+      {
+        $addFields: {
+          amount_received: {
+            $sum: "$payment_details.payment_Made"
+          }
+        }
+      },
+      {
+        $addFields: {
+          amount_remaining: {
+            $subtract: ["$payment_amount", "$amount_received"]
+          },
+          payment_progress: {
+            $cond: [
+              { $gt: ["$payment_amount", 0] },
+              {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$amount_received", "$payment_amount"] },
+                      100
+                    ]
+                  },
+                  2
+                ]
+              },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $match: {
+          ...matchStage,
+          ...(minPayment || maxPayment
+            ? {
+                payment_amount: {
+                  ...(minPayment ? { $gte: Number(minPayment) } : {}),
+                  ...(maxPayment ? { $lte: Number(maxPayment) } : {})
+                }
+              }
+            : {}),
+          ...(minReceived || maxReceived
+            ? {
+                amount_received: {
+                  ...(minReceived ? { $gte: Number(minReceived) } : {}),
+                  ...(maxReceived ? { $lte: Number(maxReceived) } : {})
+                }
+              }
+            : {}),
+          ...(minRemaining || maxRemaining
+            ? {
+                amount_remaining: {
+                  ...(minRemaining ? { $gte: Number(minRemaining) } : {}),
+                  ...(maxRemaining ? { $lte: Number(maxRemaining) } : {})
+                }
+              }
+            : {})
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          site_name: 1,
+          aggrement_no: 1,
+          aggrement_date: 1,
+          site_address: 1,
+          client_name: 1,
+          client_mobile: 1,
+          client_email: 1,
+          gst_no: 1,
+          Site_Supervisor: 1,
+          status: 1,
+          payment_amount: 1,
+          amount_received: 1,
+          amount_remaining: 1,
+          payment_progress: 1,
+          additional_notes: 1
+        }
+      }
+    ]);
+
     if (!projects || projects.length === 0) {
       return ErrorHandler(res, 404, "No projects found");
     }
 
     return ResponseOk(res, 200, "Projects retrieved successfully", projects);
   } catch (error) {
-    console.error("[ViewProject]", error);    
+    console.error("[ViewProject]", error);
     return ErrorHandler(res, 500, "Server error while retrieving projects");
   }
 };
+
+
 
 const UpdateProject = async (req, res) => {
   try {
@@ -111,10 +227,107 @@ const UpdateProject = async (req, res) => {
 };
 
 
+const ViewListOfSupervisors = async (req, res) => {
+  try {
+    const supervisors_Role = await User_Associate_With_Role.find({
+      role_id: { $ne: 1 }  
+    });
+
+    const userIds = supervisors_Role.map(entry => entry.user_id);
+
+    const supervisors = await Users.find({ _id: { $in: userIds } });
+
+    if (!supervisors || supervisors.length === 0) {
+      return ErrorHandler(res, 404, "No supervisors found");
+    }
+
+    return ResponseOk(res, 200, "Supervisors retrieved successfully", supervisors);
+  } catch (error) {
+    console.error("error", error);
+    return ErrorHandler(res, 500, "Server error while retrieving supervisors");
+  }
+};
+
+
+const GetProjectShortDetails   = async (req,res) =>{
+  try {
+      const projects = await Project.aggregate([
+      {
+        $lookup: {
+          from: "paymententries",
+          localField: "_id",
+          foreignField: "project_id",
+          as: "payment_details"
+        }
+      },
+      {
+        $addFields: {
+          amount_received: {
+            $sum: "$payment_details.payment_Made"
+          }
+        }
+      },
+      {
+        $addFields: {
+          amount_remaining: {
+            $subtract: ["$payment_amount", "$amount_received"]
+          },
+          payment_progress: {
+            $cond: [
+              { $gt: ["$payment_amount", 0] },
+              {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$amount_received", "$payment_amount"] },
+                      100
+                    ]
+                  },
+                  2
+                ]
+              },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          site_name: 1,
+          aggrement_no: 1,
+          aggrement_date: 1,
+          site_address: 1,
+          client_name: 1,
+          client_mobile: 1,
+          client_email: 1,
+          Site_Supervisor: 1,
+          status: 1,
+          payment_amount: 1,
+          amount_received: 1,
+          amount_remaining: 1,
+          payment_progress: 1,
+        }
+      }
+    ]);
+
+    if (!projects || projects.length === 0) {
+      return ErrorHandler(res, 404, "No projects found");
+    }
+      return ResponseOk(res, 200, "Projects retrieved successfully", projects);
+  } catch (error) {
+    console.error("Error in GetProjectShortDetails:", error);
+    return ErrorHandler(res, 500, "Failed to retrieve project short details", error);
+    
+  }
+}
+
 
 
 module.exports = {
   createProject,
   ViewProject,
   UpdateProject,
+  ViewListOfSupervisors,
+  GetProjectShortDetails
 };

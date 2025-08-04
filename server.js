@@ -35,18 +35,28 @@ const startServer = async () => {
   try {
     await connectDB();
     console.log(`Connected to MongoDB at ${process.env.DB_URI}`);
-
+  const server = app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
     if (process.argv[2] === 'Add_Data') {
       console.log('Adding data to database...');
       await MakeData();
+       setTimeout(() => {
+        server.close((err) => {
+          if (err) {
+            console.error('Error closing server:', err);
+            process.exit(1); 
+          }
+          console.log('Server has been stopped after seeding data.');
+          process.exit(0); 
+        });
+      }, 10000);
       console.log('Data seeding completed');
     } else {
       console.log('Running without data seeding');
     }
 
-    app.listen(PORT, () => {
-      console.log(`Server running at http://localhost:${PORT}`);
-    });
+  
 
   } catch (err) {
     console.error('Failed to start server:', err.message);

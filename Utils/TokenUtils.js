@@ -3,10 +3,10 @@ const { ACCESS_TOKEN_KEY } = require('../config');
 
 const sendToken = async (user) => {
   const token = jwt.sign(user, ACCESS_TOKEN_KEY, {
-    expiresIn: '1h',
+    expiresIn: '12h',
   });
   console.log("token", token);
-  return { token, expiresin: '1h' };
+  return { token, expiresin: '12h' };
 };
 
 module.exports = { sendToken };

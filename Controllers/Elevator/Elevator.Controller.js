@@ -7,6 +7,7 @@ const CreateElevator = async (req, res) => {
     try {
         const {
             project_id,
+            elevator_name,
             type_of_elevator,
             operation_type,
             passenger_capacity,
@@ -15,6 +16,7 @@ const CreateElevator = async (req, res) => {
             stops,
             opening_type,
             lift_well_width,
+            lift_well_depth,
             car_enclouser_type,
             car_flooring_type,
             car_door_type,
@@ -33,6 +35,7 @@ const CreateElevator = async (req, res) => {
 
         const newElevator = new Elevators({
             project_id,
+            elevator_name,
             type_of_elevator,
             operation_type,
             passenger_capacity,
@@ -41,6 +44,7 @@ const CreateElevator = async (req, res) => {
             stops,
             opening_type,
             lift_well_width,
+            lift_well_depth,
             car_enclouser_type,
             car_flooring_type,
             car_door_type,
@@ -121,10 +125,28 @@ const DeleteElevator = async (req, res) => {
     }
 }
 
+
+const GetElevatorByProjectId = async (req, res) => {
+    try {
+        const projectId = req.query.project_id;
+        const elevator = await Elevators.find({project_id:projectId})
+        .select("_id project_id elevator_name type_of_elevator operation_type passenger_capacity no_of_floors stops speed");
+        if (!elevator) {
+            return ErrorHandler(res, 404, "Elevator not found");
+        }
+
+        return ResponseOk(res, 200, "Elevator retrieved successfully", elevator);
+    } catch (error) {
+        console.error("Error retrieving elevator:", error);
+        return ErrorHandler(res, 500, "Failed to retrieve elevator", error);
+    }
+}
+
 module.exports = {
     CreateElevator,
     UpdateElevator,
     GetElevatorById,
-    DeleteElevator
+    DeleteElevator,
+    GetElevatorByProjectId
 };
 
