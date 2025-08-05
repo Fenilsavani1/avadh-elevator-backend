@@ -14,6 +14,19 @@ const DeliveryListFormSchema = new mongoose.Schema({
         type: String,   
         required: true
     },
+    files: [
+        {
+            fileType: {
+                type: String,
+                enum: ['image', 'video'],
+                required: true
+            },
+            fileUrl: {
+                type: String,
+                required: true
+            }
+        }
+    ]
 },{
     timestamps: true,
     versionKey: false
