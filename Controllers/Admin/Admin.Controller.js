@@ -3,6 +3,8 @@ const { Roles, Role_with_permission, User_Associate_With_Role } = require('../..
 const { Users } = require('../../Models/User.model')
 const { Permissions } = require('../../Models/User.model');
 const { Project } = require('../../Models/Project.model');
+const { Static_Data_Schema } = require('../../Models/StaticData.model');
+const { ActivityLog } = require('../../Models/Activitylog.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -209,6 +211,17 @@ const AddAdminUser = async (req, res) => {
       is_allowed_email: 1,
     });
 
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'ADD_ADMIN_USER',
+      type: 'Message_Response',
+      sub_type: 'Create',
+      message: `Admin user "${name}" was created with role ID ${role_id}.`,
+      title: 'Admin User Added',
+      created_by: req.user?._id || null
+    });
+
+
     return ResponseOk(res, 200, newUser, "User added successfully");
   } catch (error) {
     console.error('AddAdminUser Error:', error);
@@ -258,6 +271,17 @@ const UpdateAdminUser = async (req, res) => {
       role_id: parseInt(role_id),
     });
 
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'UPDATE_ADMIN_USER',
+      type: 'Message_Response',
+      sub_type: 'Update',
+      message: `Admin user "${name}" (ID: ${userId}) was updated.`,
+      title: 'Admin User Updated',
+      created_by: req.user?._id || null
+    });
+
+
     return ResponseOk(res, 200, "User updated successfully");
   } catch (error) {
     console.error("UpdateAdminUser Error:", error);
@@ -286,6 +310,17 @@ const DeleteAdminUser = async (req, res) => {
     await Users.findByIdAndDelete(userId);
     await User_Associate_With_Role.findByIdAndDelete(userRoleId);
 
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'DELETE_ADMIN_USER',
+      type: 'Message_Response',
+      sub_type: 'Delete',
+      message: `Admin user (ID: ${userId}) was permanently deleted.`,
+      title: 'Admin User Deleted',
+      created_by: req.user?._id || null
+    });
+
+
     return ResponseOk(res, 200, "User permanently deleted");
   } catch (error) {
     console.error("DeleteAdminUser Error:", error);
@@ -310,6 +345,17 @@ const AddRolesByAdmin = async (req, res) => {
 
     // Create new role
     const newRole = await Roles.create({ id, name });
+
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'CREATE_ROLE',
+      type: 'Message_Response',
+      sub_type: 'Create',
+      message: `New role "${name}" with ID ${id} was created.`,
+      title: 'Role Created',
+      created_by: req.user?._id || null
+    });
+
 
     return ResponseOk(res, 200, "Role created successfully", newRole);
   } catch (error) {
@@ -336,6 +382,17 @@ const UpdateRole = async (req, res) => {
       return ErrorHandler(res, 404, "Role not found.");
     }
 
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'UPDATE_ROLE',
+      type: 'Message_Response',
+      sub_type: 'Update',
+      message: `Role ID ${id} was updated to name "${name}".`,
+      title: 'Role Updated',
+      created_by: req.user?._id || null
+    });
+
+
     return ResponseOk(res, 200, "Role updated successfully", updatedRole);
   } catch (error) {
     console.error("UpdateRole Error:", error);
@@ -356,6 +413,17 @@ const DeleteRole = async (req, res) => {
     if (!deletedRole) {
       return ErrorHandler(res, 404, "Role not found or already deleted.");
     }
+
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'DELETE_ROLE',
+      type: 'Message_Response',
+      sub_type: 'Delete',
+      message: `Role with ID ${id} was deleted.`,
+      title: 'Role Deleted',
+      created_by: req.user?._id || null
+    });
+
 
     return ResponseOk(res, 200, "Role deleted successfully", deletedRole);
   } catch (error) {
@@ -387,9 +455,19 @@ const UpdatePermissionAdmin = async (req, res) => {
       { $set: { status: updateStatus } }
     );
 
-    return res.status(200).json({
-      message: `Permissions ${updateStatus === 1 ? 'enabled' : 'disabled'} successfully.`,
-      updated_ids: permission_ids,
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'UPDATE_PERMISSIONS',
+      type: 'Message_Response',
+      sub_type: updateStatus === 1 ? 'Enable' : 'Disable',
+      message: `Permissions ${updateStatus === 1 ? 'enabled' : 'disabled'}: [${permission_ids.join(', ')}]`,
+      title: `Permissions ${updateStatus === 1 ? 'Enabled' : 'Disabled'}`,
+      created_by: req.user?._id || null
+    });
+
+    return ResponseOk(res, 200, "Permissions updated successfully", {
+      updated_permissions: permission_ids,
+      status: updateStatus === 1 ? "enabled" : "disabled"
     });
 
   } catch (error) {
@@ -422,6 +500,19 @@ const UpdateProjectStatus = async (req, res) => {
       return ErrorHandler(res, 404, "Project not found");
     }
 
+    const site_name = updatedProject.site_name || 'Unknown Project';
+
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'UPDATE_PROJECT_STATUS',
+      type: 'Message_Response',
+      sub_type: 'Update',
+      message: `Project  ${site_name} status updated to ${status}.`,
+      title: 'Project Status Updated',
+      created_by: req.user?._id || null
+    });
+
+
     return ResponseOk(res, 200, "Project status updated successfully", updatedProject);
   } catch (error) {
     console.error("[UpdateProjectStatus]", error);
@@ -442,6 +533,19 @@ const DeleteProject = async (req, res) => {
     if (!deletedProject) {
       return ErrorHandler(res, 404, "Project not found");
     }
+
+    const site_name = deletedProject.site_name || 'Unknown Project';
+
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'DELETE_PROJECT',
+      type: 'Message_Response',
+      sub_type: 'Delete',
+      message: `Project ${site_name} with ID ${projectId} was deleted.`,
+      title: 'Project Deleted',
+      created_by: req.user?._id || null
+    });
+
 
     return ResponseOk(res, 200, "Project deleted successfully", deletedProject);
   } catch (error) {
@@ -540,7 +644,26 @@ const ManageRolePermissions = async (req, res) => {
   }
 };
 
+const GetStaticData = async (req, res) => {
+  try {
+    const { type } = req.query;
 
+    const filter = {};
+    if (type) {
+      filter.type = Number(type);
+    }
+    if (isNaN(filter.type)) {
+      return ErrorHandler(res, 400, "Invalid type parameter");
+    }
+
+    const staticData = await Static_Data_Schema.find(filter);
+
+    return ResponseOk(res, 200, "Static data fetched successfully", staticData);
+  } catch (error) {
+    console.error("Error fetching static data:", error);
+    return ErrorHandler(res, 500, "Failed to fetch static data", error);
+  }
+};
 
 module.exports = {
   LoginAdmin,
@@ -558,5 +681,6 @@ module.exports = {
   UpdateProjectStatus,
   DeleteProject,
   ViewProjectById,
-  ManageRolePermissions
+  ManageRolePermissions,
+  GetStaticData
 }
