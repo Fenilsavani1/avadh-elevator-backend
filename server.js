@@ -13,17 +13,18 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(authJwt());
 
 // Ensure uploads/ folder exists
-const uploadPath = path.join(__dirname, 'uploads');
+// const uploadPath = path.join(__dirname, '/public/uploads');
+const uploadPath = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
-  console.log('uploads/ folder created automatically');
+  console.log('public/uploads/ folder created automatically');
 }
 
 //uploaded files
-app.use('/uploads', express.static(uploadPath));
+app.use('/public/uploads', express.static(uploadPath));
+app.use(authJwt());
 
 // API routes
 app.use('/api/v1', Routes);
