@@ -77,7 +77,7 @@ const ErectorSchema = new mongoose.Schema({
   wiring_adjustment_charges: {
     type: String
   },
-  cut_station_charges: {
+  out_station_charges: {
     type: String
   },
   complete_date: {

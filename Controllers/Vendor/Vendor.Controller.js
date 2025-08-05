@@ -11,7 +11,6 @@ const createMaterialSet = async (req, res) => {
       vendorOrderList
     } = req.body;
 
-    // Validation
     if (!project_id || !materialSetTitle || !Array.isArray(vendorOrderList)) {
       return ErrorHandler(res, 400, "All required fields must be provided");
     }
@@ -29,10 +28,154 @@ const createMaterialSet = async (req, res) => {
       vendorOrderList
     });
 
-    return ResponseOk(res, 400, "Material Set created successfully", materialSet);
+    return ResponseOk(res, 200, "Material Set created successfully", materialSet);
   } catch (error) {
     console.error("[createMaterialSet]", error);
     return ErrorHandler(res, 500, "Server error while creating Material Set");
+  }
+};
+
+const updateMaterialSet = async (req, res) => {
+  try {
+    const {
+      materialSetId,
+      project_id,
+      materialSetTitle,
+      vendorOrderList
+    } = req.body;
+
+    if (!materialSetId || !project_id || !materialSetTitle || !Array.isArray(vendorOrderList)) {
+      return ErrorHandler(res, 400, "All required fields must be provided");
+    }
+
+    const missingFields = vendorOrderList.some(item =>
+      !item.partName || !item.brandName || !item.orderDetailsWithQty
+    );
+    if (missingFields) {
+      return ErrorHandler(res, 400, "Each vendor item must have partName, brandName, and orderDetailsWithQty");
+    }
+
+    const updatedMaterialSet = await MaterialSet.findByIdAndUpdate(
+      materialSetId,
+      {
+        project_id,
+        materialSetTitle,
+        vendorOrderList
+      },
+      { new: true } 
+    );
+
+    if (!updatedMaterialSet) {
+      return ErrorHandler(res, 404, "Material Set not found");
+    }
+
+    return ResponseOk(res, 200, "Material Set updated successfully", updatedMaterialSet);
+  } catch (error) {
+    console.error("[updateMaterialSet]", error);
+    return ErrorHandler(res, 500, "Server error while updating Material Set");
+  }
+};
+
+const getMaterialSets = async (req, res) => {
+  try {
+const materialSets = await MaterialSet.find({ project_id: req.query.project_id });
+   
+if(!materialSets || materialSets.length === 0) {
+      return ErrorHandler(res, 404, "No material sets found for this project");
+    }
+
+    return ResponseOk(res, 200, "Material Sets retrieved successfully", {
+      materialSets,
+    });
+  } catch (error) {
+    console.error("[getMaterialSets]", error);
+    return ErrorHandler(res, 500, "Server error while retrieving material sets");
+  }
+};
+
+const deleteMaterialSet = async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    const entry = await MaterialSet.findById(id);
+    if (!entry) return ErrorHandler(res, 404, "Entry not found");
+
+   await entry.deleteOne();
+
+    return ResponseOk(res, 200, "Entry deleted successfully");
+  } catch (error) {
+    console.error("error", error);
+    return ErrorHandler(res, 500, "Server error while deleting Material Set");
+    
+  }
+}
+
+const getMaterialSetsOverview = async (req, res) => {
+  try {
+    const { project_id } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(project_id)) {
+      return ErrorHandler(res, 400, "Invalid project_id format");
+    }
+
+    const materialSets = await MaterialSet.find({ project_id })
+      .select("_id materialSetTitle vendorOrderList")
+      .lean();
+
+    if (!materialSets || materialSets.length === 0) {
+      return ErrorHandler(res, 404, "No material sets found for this project");
+    }
+
+    const result = materialSets.map(set => {
+      const totalItems = set.vendorOrderList.length;
+      const receivedCount = set.vendorOrderList.filter(item => item.received === true).length;
+      const pendingItems = set.vendorOrderList
+        .filter(item => item.received === false)
+        .map(item => item.partName);
+
+      const completionProgress = totalItems > 0
+        ? Math.round((receivedCount / totalItems) * 100)
+        : 0;
+
+      return {
+        id: set._id,
+        materialSetTitle: set.materialSetTitle,
+        pendingItems,
+        totalItems,
+        receivedCount,
+        pendingCount: pendingItems.length,
+        completionProgress: `${completionProgress}%`
+      };
+    });
+
+    return ResponseOk(res, 200, "Material Sets retrieved successfully", { materialSets: result });
+  } catch (error) {
+    console.error("[getMaterialSets]", error);
+    return ErrorHandler(res, 500, "Server error while retrieving material sets");
+  }
+};
+
+
+
+
+
+const getMaterialSetsByid = async (req, res) => {
+  try {
+      const { id } = req.query;
+    const materialSets = await MaterialSet.findById(id)
+    // .populate('project_id', 'site_name')
+    // .lean();
+
+    // const vendors = await Vendor.find({}, 'company_name').lean();
+
+    // const companyNames = vendors.map(v => v.company_name);
+
+    return ResponseOk(res, 200, "Material Sets retrieved successfully", {
+      materialSets,
+    });
+  } catch (error) {
+    console.error("[getMaterialSets]", error);
+    return ErrorHandler(res, 500, "Server error while retrieving material sets");
   }
 };
 
@@ -108,29 +251,6 @@ const GetVendor = async (req, res) => {
   }
 };
 
-const getMaterialSets = async (req, res) => {
-  try {
-    // Fetch all material sets
-    const materialSets = await MaterialSet.find()
-    // .populate('project_id', 'site_name')
-    // .lean();
-
-    // Fetch all vendors
-    const vendors = await Vendor.find({}, 'company_name').lean();
-
-    // Extract company names
-    const companyNames = vendors.map(v => v.company_name);
-
-    // Return both in a single response
-    return ResponseOk(res, 200, "Material Sets retrieved successfully", {
-      materialSets,
-      vendorCompanyNames: companyNames
-    });
-  } catch (error) {
-    console.error("[getMaterialSets]", error);
-    return ErrorHandler(res, 500, "Server error while retrieving material sets");
-  }
-};
 
 const DeleteVendor = async (req, res) => {
   try {
@@ -157,9 +277,13 @@ const DeleteVendor = async (req, res) => {
 
 module.exports = {
   createMaterialSet,
+  updateMaterialSet,
+  deleteMaterialSet,
+  getMaterialSets,
+  getMaterialSetsByid,
+  getMaterialSetsOverview,
   addVendor,
   GetVendor,
-  getMaterialSets,
   UpdateVendor,
-  DeleteVendor
+  DeleteVendor,
 }

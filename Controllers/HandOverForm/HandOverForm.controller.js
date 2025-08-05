@@ -1,7 +1,8 @@
-const { HandOverForm } = require('../../Models/HandOverForm.model');
+const { HandOverForm,ComplaintForm } = require('../../Models/HandOverForm.model');
 const { Image } = require('../../Models/Images.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
 const path = require('path');
+const fs = require("fs");
 
 
 const CreateHandOverForm = async (req, res) => {
@@ -16,6 +17,9 @@ const CreateHandOverForm = async (req, res) => {
       erectorName,
       wireManName,
       project_id,
+      complaint_date = [],
+      complaint_point = [],
+      complaint_remark = [],
     } = req.body;
 
     if (!siteSupervisor || !date || !jobNumber || !project_id) {
@@ -24,11 +28,11 @@ const CreateHandOverForm = async (req, res) => {
 
     const uploadedFiles = req.files || [];
 
-    const mediaFiles = uploadedFiles.map(file => ({
-      fileType: file.mimetype.startsWith('video') ? 'video' : 'image'
+    const files = uploadedFiles.map(file => ({
+      fileType: file.mimetype.startsWith('video') ? 'video' : 'image',
+      fileUrl: `public/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`
     }));
 
-    // Step 1: Save HandOverForm with media metadata
     const newForm = await HandOverForm.create({
       siteSupervisor,
       date,
@@ -39,22 +43,24 @@ const CreateHandOverForm = async (req, res) => {
       erectorName,
       wireManName,
       project_id,
-      mediaFiles
+      files
     });
 
-    // Step 2: Save file URLs in images collection
-    const imageDocs = uploadedFiles.map(file => {
-      const fileUrl = `/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`;
-      return {
-        project_id,
-        table_type: "HandOverForm",
-        table_id: newForm._id,
-        document_url: fileUrl
-      };
-    });
+    const complaints = [];
 
-    if (imageDocs.length > 0) {
-      await Image.insertMany(imageDocs);
+    for (let i = 0; i < complaint_date.length; i++) {
+      if (complaint_point[i]) {
+        complaints.push({
+          hand_over_form_id: newForm._id,
+          date: complaint_date[i],
+          complaint_point: complaint_point[i],
+          remark: complaint_remark[i] || "",
+        });
+      }
+    }
+
+    if (complaints.length > 0) {
+      await ComplaintForm.insertMany(complaints);
     }
 
     return ResponseOk(res, 201, "HandOver form created successfully", {
@@ -67,13 +73,131 @@ const CreateHandOverForm = async (req, res) => {
   }
 };
 
+const UpdateHandOverForm = async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    if (!id) {
+      return ErrorHandler(res, 400, "Missing query parameter: id");
+    }
+
+    const existingForm = await HandOverForm.findById(id);
+    if (!existingForm) {
+      return ErrorHandler(res, 404, "HandOver form not found");
+    }
+
+    const {
+      siteSupervisor,
+      date,
+      jobNumber,
+      sideName,
+      wingLiftNumber,
+      siteHandler,
+      erectorName,
+      wireManName,
+      project_id,
+      deletedFileId,
+      complaint_date = [],
+      complaint_point = [],
+      complaint_remark = [],
+    } = req.body;
+
+    const idsToDelete = Array.isArray(deletedFileId)
+      ? deletedFileId
+      : deletedFileId
+      ? [deletedFileId]
+      : [];
+
+    if (idsToDelete.length > 0) {
+      for (const fileId of idsToDelete) {
+        const fileToRemove = existingForm.files.find(
+          (file) => file._id.toString() === fileId
+        );
+
+        if (fileToRemove) {
+          const filePath = path.join(
+            __dirname,
+            "..",
+            fileToRemove.fileUrl.replace("/public", "public")
+          );
+
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        }
+      }
+
+      existingForm.files = existingForm.files.filter(
+        (file) => !idsToDelete.includes(file._id.toString())
+      );
+    }
+
+    const uploadedFiles = req.files || [];
+    const newFiles = uploadedFiles.map((file) => ({
+      fileType: file.mimetype.startsWith("video") ? "video" : "image",
+      fileUrl: `/public/uploads/${
+        file.mimetype.startsWith("video") ? "videos" : "images"
+      }/${file.filename}`,
+    }));
+
+    if (newFiles.length > 0) {
+      existingForm.files.push(...newFiles);
+    }
+
+    if (siteSupervisor !== undefined) existingForm.siteSupervisor = siteSupervisor;
+    if (date !== undefined) existingForm.date = date;
+    if (jobNumber !== undefined) existingForm.jobNumber = jobNumber;
+    if (sideName !== undefined) existingForm.sideName = sideName;
+    if (wingLiftNumber !== undefined) existingForm.wingLiftNumber = wingLiftNumber;
+    if (siteHandler !== undefined) existingForm.siteHandler = siteHandler;
+    if (erectorName !== undefined) existingForm.erectorName = erectorName;
+    if (wireManName !== undefined) existingForm.wireManName = wireManName;
+    if (project_id !== undefined) existingForm.project_id = project_id;
+
+    await existingForm.save();
+
+
+    await ComplaintForm.deleteMany({ handOverFormId: existingForm._id });
+
+    const complaints = [];
+
+    for (let i = 0; i < complaint_point.length; i++) {
+      if (complaint_point[i]) {
+        complaints.push({
+          hand_over_form_id: existingForm._id,
+          date: complaint_date[i],
+          complaint_point: complaint_point[i],
+          remark: complaint_remark[i] || "",
+        });
+      }
+    }
+
+    if (complaints.length > 0) {
+      await ComplaintForm.insertMany(complaints);
+    }
+
+
+    return ResponseOk(res, 200, "HandOver form updated successfully", existingForm);
+  } catch (error) {
+    console.error("Error updating HandOver form:", error);
+    return ErrorHandler(
+      res,
+      500,
+      "Failed to update HandOver form",
+      error.message || error
+    );
+  }
+};
+
+
 const GetHandOverForm = async (req, res) => {
   try {
     const { project_id } = req.query;
     if (!project_id) {
       return ErrorHandler(res, 400, "Missing required query parameter: project_id");
     }
-    const handOverForms = await HandOverForm.find({ project_id }).populate('mediaFiles');
+    const handOverForms = await HandOverForm.find({ project_id }).populate('files');
+    
     if (!handOverForms || handOverForms.length === 0) {
       return ErrorHandler(res, 404, "No HandOver forms found for this project");
     }
@@ -87,71 +211,45 @@ const GetHandOverForm = async (req, res) => {
   }
 };
 
-
-const UpdateHandOverForm = async (req, res) => {
+const GetHandOverFormById = async (req, res) => {
   try {
     const { id } = req.query;
-
     if (!id) {
       return ErrorHandler(res, 400, "Missing required query parameter: id");
     }
-
-    const {
-      siteSupervisor,
-      date,
-      jobNumber,
-      sideName,
-      wingLiftNumber,
-      siteHandler,
-      erectorName,
-      wireManName,
-      project_id,
-    } = req.body;
-
-    if (!id || !project_id) {
-      return ErrorHandler(res, 400, "Required fields missing: id, project_id");
+    const handOverForms = await HandOverForm.findById(id);
+    const complaintForms = await ComplaintForm.find({ hand_over_form_id: id });
+    if (!handOverForms || handOverForms.length === 0) {
+      return ErrorHandler(res, 404, "No HandOver forms found for this project");
     }
-
-    const existingForm = await HandOverForm.findById(id);
-    if (!existingForm) {
-      return ErrorHandler(res, 404, "HandOver form not found");
-    }
-
-    existingForm.siteSupervisor = siteSupervisor || existingForm.siteSupervisor;
-    existingForm.date = date || existingForm.date;
-    existingForm.jobNumber = jobNumber || existingForm.jobNumber;
-    existingForm.sideName = sideName || existingForm.sideName;
-    existingForm.wingLiftNumber = wingLiftNumber || existingForm.wingLiftNumber;
-    existingForm.siteHandler = siteHandler || existingForm.siteHandler;
-    existingForm.erectorName = erectorName || existingForm.erectorName;
-    existingForm.wireManName = wireManName || existingForm.wireManName;
-    existingForm.project_id = project_id;
-
-    await existingForm.save();
-
-    const uploadedFiles = req.files || [];
-
-    const imageDocs = uploadedFiles.map(file => {
-      const fileUrl = `/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`;
-      return {
-        project_id,
-        table_type: "HandOverForm",
-        table_id: existingForm._id,
-        document_url: fileUrl
-      };
+    return ResponseOk(res, 200, "HandOver forms retrieved successfully", {
+      forms: handOverForms,
+      complaints: complaintForms
     });
-
-    if (imageDocs.length > 0) {
-      await Image.insertMany(imageDocs);
-    }
-
-    return ResponseOk(res, 200, "HandOver form updated successfully", {
-      form: existingForm,
-    });
-
   } catch (error) {
-    console.error("error", error);
-    return ErrorHandler(res, 500, "Server error while updating HandOver form");
+    console.log("error", error);
+
+    return ErrorHandler(res, 500, "Server error while retrieving HandOver forms");
+  }
+};
+
+const GetHandOverFormOverview = async (req, res) => {
+  try {
+    const { project_id } = req.query;
+    if (!project_id) {
+      return ErrorHandler(res, 400, "Missing required query parameter: project_id");
+    }
+    const handOverForms = await HandOverForm.find({ project_id }).select('_id siteSupervisor date jobNumber wingLiftNumber siteHandler erectorName');
+    if (!handOverForms || handOverForms.length === 0) {
+      return ErrorHandler(res, 404, "No HandOver forms found for this project");
+    }
+    return ResponseOk(res, 200, "HandOver forms retrieved successfully", {
+      forms: handOverForms,
+    });
+  } catch (error) {
+    console.log("error", error);
+
+    return ErrorHandler(res, 500, "Server error while retrieving HandOver forms");
   }
 };
 
@@ -183,5 +281,7 @@ module.exports = {
   CreateHandOverForm,
   GetHandOverForm,
   UpdateHandOverForm,
-  DeleteHandOverForm
+  DeleteHandOverForm,
+  GetHandOverFormById,
+  GetHandOverFormOverview
 };

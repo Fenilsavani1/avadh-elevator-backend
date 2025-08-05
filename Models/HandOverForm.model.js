@@ -1,10 +1,6 @@
 const mongoose = require("mongoose");
 
 const HandOverFormSchema = new mongoose.Schema({
-  id : {
-    type: mongoose.Schema.Types.ObjectId,
-    auto: true
-  },
   project_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'project',
@@ -44,10 +40,19 @@ const HandOverFormSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  mediaFiles: [{
-  fileName: String,
-  fileType: String // 'image' or 'video'
-}]
+  files: [
+        {
+            fileType: {
+                type: String,
+                enum: ['image', 'video'],
+                required: true
+            },
+            fileUrl: {
+                type: String,
+                required: true
+            }
+        }
+    ]
 }, {
   timestamps: true,
 });
@@ -77,10 +82,10 @@ const ComplaintFormSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  action : {
-    type: String,
-    trim: true,
-  },
+  // action : {
+  //   type: String,
+  //   trim: true,
+  // },
 },{
   timestamps: true,
   versionKey: false

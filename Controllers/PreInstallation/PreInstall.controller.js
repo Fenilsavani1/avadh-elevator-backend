@@ -53,9 +53,11 @@ const files = uploadedFiles.map(file => ({
 
 const GetAllPreInstallations = async (req, res) => {
   try {
-    const allEntries = await PreInstallation.find(); 
+    const allEntries = await PreInstallation.find({project_id: req.query.project_id}); 
+    console.log("object", allEntries);
     return ResponseOk(res, 200, "Fetched all entries", allEntries);
   } catch (error) {
+    console.log("error", error);
     return ErrorHandler(res, 500, "Failed to fetch entries", error.message || error);
   }
 };
@@ -95,7 +97,6 @@ const UpdatePreInstallation = async (req, res) => {
       deletedFileId,
     } = req.body;
 
-    // Convert single or multiple deletedFileId to array
     const idsToDelete = Array.isArray(deletedFileId)
       ? deletedFileId
       : deletedFileId
@@ -115,18 +116,16 @@ const UpdatePreInstallation = async (req, res) => {
             fileToRemove.fileUrl.replace("/public", "public")
           );
           if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath); // delete from disk
+            fs.unlinkSync(filePath); 
           }
         }
       }
 
-      // Remove from Mongo array
       existingEntry.files = existingEntry.files.filter(
         (file) => !idsToDelete.includes(file._id.toString())
       );
     }
 
-    // 📤 HANDLE NEW UPLOADED FILES
     const uploadedFiles = req.files || [];
     const newFiles = uploadedFiles.map((file) => ({
       fileType: file.mimetype.startsWith("video") ? "video" : "image",
@@ -136,10 +135,9 @@ const UpdatePreInstallation = async (req, res) => {
     }));
 
     if (newFiles.length > 0) {
-      existingEntry.files.push(...newFiles); // append new files
+      existingEntry.files.push(...newFiles); 
     }
 
-    // 📝 UPDATE FIELDS
     if (name !== undefined) existingEntry.name = name;
     if (lift_details !== undefined) existingEntry.lift_details = lift_details;
     if (lift_shaft_plaster !== undefined)
@@ -191,7 +189,7 @@ const DeletePreInstallation = async (req, res) => {
 
 const GetAllPreInstallationsOverview = async (req, res) => {
   try {
-    const allEntries = await PreInstallation.find({}).select("_id name lift_details lift_shaft_plaster pit_water_ppc machine_room_pcc lift_machine_clean whitewash_wiring machine_room_ladder_door_window");
+    const allEntries = await PreInstallation.find({project_id: req.query.project_id}).select("_id name lift_details lift_shaft_plaster pit_water_ppc machine_room_pcc lift_machine_clean whitewash_wiring machine_room_ladder_door_window");
 
     const UpdatedData = {
       entries: allEntries.map(entry => {
