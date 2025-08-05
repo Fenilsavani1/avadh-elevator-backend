@@ -204,20 +204,33 @@ const PreInstallationSchema = new mongoose.Schema({
     },
     machine_room_pcc: {
         type: Boolean,
-        required: true,
+        default: false,
     },
     lift_machine_clean: {
         type: Boolean,
-        required: true,
+        default: false,
     },
     whitewash_wiring: {
         type: Boolean,
-        required: true,
+        default: false,
     },
     machine_room_ladder_door_window: {
         type: Boolean,
-        required: true,
+        default: false,
     },
+       files: [
+        {
+            fileType: {
+                type: String,
+                enum: ['image', 'video'],
+                required: true
+            },
+            fileUrl: {
+                type: String,
+                required: true
+            }
+        }
+    ]
 }, {
     timestamps: true,
     versionKey: false,
