@@ -39,7 +39,7 @@ const CreateHandOverForm = async (req, res) => {
       erectorName,
       wireManName,
       project_id,
-      // mediaFiles
+      mediaFiles
     });
 
     // Step 2: Save file URLs in images collection

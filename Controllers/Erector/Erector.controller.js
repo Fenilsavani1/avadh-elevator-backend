@@ -1,38 +1,30 @@
-const {Erector} = require('../../Models/Erector.model');
+const { Erector } = require('../../Models/Erector.model');
 const { InstallationTerms, PaymentRecord } = require('../../Models/Erector.model');
-const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler'); 
+const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
+const { ActivityLog } = require('../../Models/Activitylog.model');
 
 const CreateErector = async (req, res) => {
   try {
     const newErector = new Erector(req.body);
     const savedErector = await newErector.save();
+
+
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'CREATE_ERECTOR',
+      type: 'Message_Response',
+      sub_type: 'Create',
+      message: `Erector "${savedErector.erector_name || savedErector._id}" was created.`,
+      title: 'Erector Created',
+      created_by: req.user?._id || null
+    });
+
     return ResponseOk(res, 201, 'Erector created successfully', savedErector);
   } catch (error) {
-    console.log("erroer", error );
+    console.log("erroer", error);
     return ErrorHandler(res, 500, 'Failed to create erector', error);
   }
 };
-
-const CreateInstallationTerms = async (req, res) => {
-  try {
-    const newTerms = new InstallationTerms(req.body);
-    const savedTerms = await newTerms.save();
-    return ResponseOk(res, 201, 'Installation terms saved successfully', savedTerms);
-  } catch (error) {
-    return ErrorHandler(res, 500, 'Failed to create installation terms', error);
-  }
-};
-
-const CreatePaymentRecord = async (req, res) => {
-  try {
-    const newPayment = new PaymentRecord(req.body);
-    const savedPayment = await newPayment.save();
-    return ResponseOk(res, 201, 'Payment record created successfully', savedPayment);
-  } catch (error) {
-    return ErrorHandler(res, 500, 'Failed to create payment record', error);
-  }
-};
-
 
 const GetAllErectors = async (req, res) => {
   try {
@@ -63,9 +55,9 @@ const GetAllErectors = async (req, res) => {
 
 const DeleteErector = async (req, res) => {
   try {
-    const  id  = req.query.id;
+    const id = req.query.id;
     const deletedErector = await Erector.findByIdAndDelete(id);
-    
+
     if (!deletedErector) {
       return ErrorHandler(res, 404, 'Erector not found');
     }
@@ -76,15 +68,13 @@ const DeleteErector = async (req, res) => {
 
     return ResponseOk(res, 200, 'Erector deleted successfully');
   } catch (error) {
-    return ErrorHandler(res, 500, 'Failed to delete erector', error); 
+    return ErrorHandler(res, 500, 'Failed to delete erector', error);
   }
 };
 
 
 module.exports = {
   CreateErector,
-  CreateInstallationTerms,
-  CreatePaymentRecord,
   GetAllErectors,
   DeleteErector
 };

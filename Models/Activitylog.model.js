@@ -1,40 +1,40 @@
-const mongoose = require("mongoose");
+// models/ActivityLog.model.js
 
-const ActivityLogSchema = new mongoose.Schema({
-  activity_logs_id: {
+const mongoose = require('mongoose');
+
+const activityLogSchema = new mongoose.Schema({
+  user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    auto: true,
-    index: true
+    ref: 'users',
+    required: false,
   },
-  reference_id: {
-    type: mongoose.Schema.Types.ObjectId,
+  action: {
+    type: String,
     required: true,
   },
-  reference_type: {
+  type: {
     type: String,
     required: true,
-    enum: ['user', 'project', ] 
   },
-  content_words: {
+  sub_type: {
     type: String,
-    required: true
+    required: false,
   },
-  status: {
-    type: Number,
-    default:0
-  },
-  activity_category: {
+  message : {
     type: String,
-    required: true
+    required: true,
   },
-  activity_id: {
-    type: String, 
-    required: true
+  title: {
+    type: String,
+    required: true,
   },
-}, {
-  timestamps: false,
-  versionKey: false
+  created_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'users',
+    required: false,
+  },
 });
 
-const ActivityLog = mongoose.model('activity_logs', ActivityLogSchema);
+const ActivityLog = mongoose.model('ActivityLog', activityLogSchema);
+
 module.exports = { ActivityLog };
