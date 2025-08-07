@@ -101,15 +101,14 @@ const UpdateHandOverForm = async (req, res) => {
       complaint_point = [],
       complaint_remark = [],
     } = req.body;
-
     const idsToDelete = Array.isArray(deletedFileId)
       ? deletedFileId
       : deletedFileId
       ? [deletedFileId]
       : [];
-
-    if (idsToDelete.length > 0) {
-      for (const fileId of idsToDelete) {
+      const UpdateddeletedImgIds = JSON.parse(idsToDelete);
+    if (UpdateddeletedImgIds.length > 0) {
+      for (const fileId of UpdateddeletedImgIds) {
         const fileToRemove = existingForm.files.find(
           (file) => file._id.toString() === fileId
         );
@@ -128,7 +127,7 @@ const UpdateHandOverForm = async (req, res) => {
       }
 
       existingForm.files = existingForm.files.filter(
-        (file) => !idsToDelete.includes(file._id.toString())
+        (file) => !UpdateddeletedImgIds.includes(file._id.toString())
       );
     }
 
@@ -268,8 +267,6 @@ const DeleteHandOverForm = async (req, res) => {
       return ErrorHandler(res, 404, "HandOverForm not found");
     }
 
-    // Optionally delete associated images
-    await Image.deleteMany({ table_id: id, table_type: "HandOverForm" });
 
     return ResponseOk(res, 200, "HandOver form deleted successfully");
   } catch (error) {
