@@ -3,7 +3,7 @@ const router = express.Router();
 const { Elevators } = require('../../Models/Project.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
 const { ActivityLog } = require('../../Models/Activitylog.model');
-const { Project } = require('../../Models/Project.model'); // Assuming you have a Project model
+const { Project } = require('../../Models/Project.model'); 
 
 const CreateElevator = async (req, res) => {
     try {
@@ -154,7 +154,6 @@ const DeleteElevator = async (req, res) => {
 
     const deletedElevator = await Elevators.findByIdAndDelete(elevatorId);
 
-    // Log the delete action
     await ActivityLog.create({
       user_id: req.user?._id || null,
       action: 'DELETE_ELEVATOR',
@@ -189,11 +188,28 @@ const GetElevatorByProjectId = async (req, res) => {
     }
 }
 
+
+
+const GetElevatorAll = async (req, res) => {
+    try {
+        const elevator = await Elevators.find()
+        if (!elevator) {
+            return ErrorHandler(res, 404, "Elevator not found");
+        }
+
+        return ResponseOk(res, 200, "Elevator retrieved successfully", elevator);
+    } catch (error) {
+        console.error("Error retrieving elevator:", error);
+        return ErrorHandler(res, 500, "Failed to retrieve elevator", error);
+    }
+}
+
 module.exports = {
     CreateElevator,
     UpdateElevator,
     GetElevatorById,
     DeleteElevator,
-    GetElevatorByProjectId
+    GetElevatorByProjectId,
+    GetElevatorAll
 };
 

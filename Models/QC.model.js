@@ -6,7 +6,12 @@ const QCEntrySchema = new mongoose.Schema({
   type: mongoose.Schema.Types.ObjectId,
   ref: "project",
   required: true,
-},
+  },
+  qc_name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
   areaName: {
     type: String,
     required: true,
@@ -42,65 +47,78 @@ const QCEntrySchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
-   mediaFiles: [{
-  fileName: String,
-  fileType: String // 'image' or 'video'
-}],
-  notesAndSignatures: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'notes_signatures'
-  }
+  files: [
+        {
+            fileType: {
+                type: String,
+                enum: ['image', 'video'],
+                required: true
+            },
+            fileUrl: {
+                type: String,
+                required: true
+            }
+        }
+    ],
+  notes: {
+    type: String,
+    trim: true,
+  },
+  inspection_data: {
+    type: mongoose.Schema.Types.Mixed,
+    required: true
+  },
 }, {
   timestamps: true,
 });
 
 const QCEntry = mongoose.model("qcentrys", QCEntrySchema);
 
-const Notes_Signatures = new mongoose.Schema({
-  note: {
-    type: String,
-  },
-  wiremanSign: {
-    type: String,
-  },
-  electricianSign: {
-    type: String,
-  },
-  siteSupervisorSign: {
-    type: String,
-  },
-  ownerSign: {
-    type: String,
-  },
-  maintenanceManagerSign: {
-    type: String,
-  },
-}, {
-  timestamps: true,
-});
+// const Notes_Signatures = new mongoose.Schema({
+//   note: {
+//     type: String,
+//   },
+//   wiremanSign: {
+//     type: String,
+//   },
+//   electricianSign: {
+//     type: String,
+//   },
+//   siteSupervisorSign: {
+//     type: String,
+//   },
+//   ownerSign: {
+//     type: String,
+//   },
+//   maintenanceManagerSign: {
+//     type: String,
+//   },
+// }, {
+//   timestamps: true,
+// });
 
-const NotesAndSignatures = mongoose.model("notes_signatures", Notes_Signatures);
+// const NotesAndSignatures = mongoose.model("notes_signatures", Notes_Signatures);
 
-const ElectricalQcChecklistSchema = new mongoose.Schema({
-  id : {
-    type: mongoose.Schema.Types.ObjectId,
-    auto: true
-  },
-  parent_form_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'qcentrys',
-    required: true
-  },
-  inspection_data: {
-    type: mongoose.Schema.Types.Mixed,
-    required: true
-  },
-},{
-  timestamps: true,
-  versionKey: false
-})
+// const ElectricalQcChecklistSchema = new mongoose.Schema({
+//   id : {
+//     type: mongoose.Schema.Types.ObjectId,
+//     auto: true
+//   },
+//   parent_form_id: {
+//     type: mongoose.Schema.Types.ObjectId,
+//     ref: 'qcentrys',
+//     required: true
+//   },
+//   inspection_data: {
+//     type: mongoose.Schema.Types.Mixed,
+//     required: true
+//   },
+// },{
+//   timestamps: true,
+//   versionKey: false
+// })
 
-const ElectricalQcChecklist = mongoose.model('electrical_qc_checklist', ElectricalQcChecklistSchema);
+// const ElectricalQcChecklist = mongoose.model('electrical_qc_checklist', ElectricalQcChecklistSchema);
 
 const MeachanicalQcSchema = new mongoose.mongoose.Schema({
   id : {
@@ -214,8 +232,8 @@ const MeachanicalQcForm = mongoose.model('meachanical_qc_form', MeachanicalQcFor
 
 module.exports = {
   QCEntry,
-  NotesAndSignatures,
-  ElectricalQcChecklist,
+  // NotesAndSignatures,
+  // ElectricalQcChecklist,
   MeachanicalQc,
   MeachanicalQcForm
 }

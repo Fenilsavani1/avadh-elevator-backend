@@ -1,37 +1,16 @@
 const { QCEntry } = require("../../Models/QC.model");
 const { Image } = require("../../Models/Images.model");
 const { ResponseOk, ErrorHandler } = require("../../Utils/ResponseHandler");
+const { json } = require("sequelize");
+const path = require("path");
+const fs = require("fs");
 
 
 const CreateQCEntry = async (req, res) => {
   try {
     const {
       areaName,
-      date,
-      siteName,
-      jobNumber,
-      wingOrLiftNo,
-      type,
-      sideSupervisor,
-      wiremanName,
-      project_id
-    } = req.body;
-
-    if (!areaName || !date || !siteName || !jobNumber || !project_id) {
-      return ErrorHandler(res, 400, "Required fields missing: areaName, date, siteName, jobNumber, project_id");
-    }
-
-    const uploadedFiles = req.files || [];
-    console.log( "Uploaded files:", uploadedFiles);
-
-
-    const mediaFiles = uploadedFiles.map(file => ({
-      fileType: file.mimetype.startsWith('video') ? 'video' : 'image'
-    }));
-
-    //step 1
-    const newQCEntry = await QCEntry.create({
-      areaName,
+      qc_name,
       date,
       siteName,
       jobNumber,
@@ -40,24 +19,36 @@ const CreateQCEntry = async (req, res) => {
       sideSupervisor,
       wiremanName,
       project_id,
-      // mediaFiles
+      inspection_data
+    } = req.body;
+
+    if (!areaName || !date || !siteName || !jobNumber || !project_id) {
+      return ErrorHandler(res, 400, "Required fields missing: areaName, date, siteName, jobNumber, project_id");
+    }
+
+    const uploadedFiles = req.files || [];
+
+      const files = uploadedFiles.map(file => ({
+        fileType: file.mimetype.startsWith('video') ? 'video' : 'image',
+        fileUrl: `public/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`
+      }));
+
+
+    const newQCEntry = await QCEntry.create({
+      areaName,
+      qc_name,
+      date,
+      siteName,
+      jobNumber,
+      wingOrLiftNo,
+      type,
+      sideSupervisor,
+      wiremanName,
+      project_id,
+      files,
+      inspection_data
     });
 
-    //step 2
-    const imageDocs = uploadedFiles.map(file => {
-      const fileUrl = `/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`;
-      return {
-        project_id,
-        table_type: "QCEntry",
-        table_id: newQCEntry._id,
-        document_url: fileUrl
-      };
-    }
-    );
-     console.log("Image Docs to insert:", imageDocs); 
-   if (imageDocs.length > 0) {
-      await Image.insertMany(imageDocs);
-    }
 
     return ResponseOk(res, 201, "QC Entry created successfully", newQCEntry);
 
@@ -77,6 +68,7 @@ const UpdateQCEntry = async (req, res) => {
 
     const {
       areaName,
+      qc_name,
       date,
       siteName,
       jobNumber,
@@ -84,16 +76,18 @@ const UpdateQCEntry = async (req, res) => {
       type,
       sideSupervisor,
       wiremanName,
-      project_id
+      project_id,
+      inspection_data,
+      deletedImg
     } = req.body;
 
     if (!project_id) {
       return ErrorHandler(res, 400, "Missing required field: project_id");
     }
 
-    // Step 1: Build dynamic update object
     const updateFields = {};
     if (areaName !== undefined) updateFields.areaName = areaName;
+    if (qc_name !== undefined) updateFields.qc_name = qc_name;
     if (date !== undefined) updateFields.date = date;
     if (siteName !== undefined) updateFields.siteName = siteName;
     if (jobNumber !== undefined) updateFields.jobNumber = jobNumber;
@@ -101,35 +95,71 @@ const UpdateQCEntry = async (req, res) => {
     if (type !== undefined) updateFields.type = type;
     if (sideSupervisor !== undefined) updateFields.sideSupervisor = sideSupervisor;
     if (wiremanName !== undefined) updateFields.wiremanName = wiremanName;
-    updateFields.project_id = project_id;
+    // // updateFields.project_id = project_id;
+    // if (project_id !== undefined) updateFields.project_id = project_id;
 
-    // Step 2: Update QCEntry
+    if (inspection_data !== undefined) {
+      const cleanedInspectionData = Array.isArray(inspection_data)
+        ? inspection_data.map(section => ({
+            ...section,
+            data: Array.isArray(section.data)
+              ? section.data.map(item => ({
+                  point: item.point?.trim(),
+                  action: item.action?.trim() || "N/A",
+                  details: item.details?.trim() || "N/A"
+                }))
+              : []
+          }))
+        : [];
+      updateFields.inspection_data = cleanedInspectionData;
+    }
+
+    const uploadedFiles = req.files || [];
+    const newFiles = uploadedFiles.map(file => ({
+      fileType: file.mimetype.startsWith("video") ? "video" : "image",
+      fileUrl: `public/uploads/${file.mimetype.startsWith("video") ? "videos" : "images"}/${file.filename}`,
+    }));
+
+    const currentEntry = await QCEntry.findById(id);
+    if (!currentEntry) {
+      return ErrorHandler(res, 404, "QC Entry not found");
+    }
+
+
+
+    let updatedFiles = currentEntry.files || [];
+console.log("deletedImg",deletedImg);
+let UpdateddeletedImgIds = JSON.parse(deletedImg || "[]");
+
+    if (UpdateddeletedImgIds.length > 0) {
+      const deletedSet = new Set(UpdateddeletedImgIds);
+
+      const filesToDelete = updatedFiles.filter(file => deletedSet.has(file._id?.toString()));
+
+      for (const file of filesToDelete) {
+        const filePath = path.resolve(file.fileUrl);
+        fs.unlink(filePath, err => {
+          if (err) {
+            console.warn(`Failed to delete file: ${filePath}`, err.message);
+          }
+        });
+      }
+
+      updatedFiles = updatedFiles.filter(file => !deletedSet.has(file._id?.toString()));
+    }
+
+if (newFiles.length > 0) {
+  updatedFiles.push(...newFiles);
+}
+
+updateFields.files = updatedFiles;
+
+
     const updatedQCEntry = await QCEntry.findByIdAndUpdate(
       id,
       { $set: updateFields },
       { new: true }
     );
-
-    if (!updatedQCEntry) {
-      return ErrorHandler(res, 404, "QC Entry not found");
-    }
-
-    // Step 3: Handle file uploads
-    const uploadedFiles = req.files || [];
-
-    const imageDocs = uploadedFiles.map(file => {
-      const fileUrl = `/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`;
-      return {
-        project_id,
-        table_type: "QCEntry",
-        table_id: updatedQCEntry._id,
-        document_url: fileUrl
-      };
-    });
-
-    if (imageDocs.length > 0) {
-      await Image.insertMany(imageDocs);
-    }
 
     return ResponseOk(res, 200, "QC Entry updated successfully", {
       entry: updatedQCEntry,
@@ -137,40 +167,35 @@ const UpdateQCEntry = async (req, res) => {
 
   } catch (error) {
     console.error("Error updating QC Entry:", error);
-    return ErrorHandler(res, 500, "Server error while updating QC Entry");
+    return ErrorHandler(res, 500, "Server error while updating QC Entry", error.message || error);
   }
 };
+
 
 
 const GetQCEntries = async (req, res) => {
   try {
    
-    const entries = await QCEntry.find()
-      .populate('project_id', 'site_name') 
-      .lean(); // convert to plain JS objects
+    const entries = await QCEntry.find({project_id: req.query.project_id})
 
-    const qcIds = entries.map(entry => entry._id);
 
-    // 3. Fetch related images by table_type and table_id
-    const images = await Image.find({
-      table_type: 'QCEntry',
-      table_id: { $in: qcIds }
-    }).lean();
+    return ResponseOk(res, 200, 'QC Entries with images retrieved successfully', entries);
+  } catch (error) {
+    console.error("Error retrieving QC Entries:", error);
+    return ErrorHandler(res, 500, 'Failed to retrieve QC Entries', error.message || error);
+  }
+};
 
-    const imageMap = {};
-    for (const img of images) {
-      const id = img.table_id.toString();
-      if (!imageMap[id]) imageMap[id] = [];
-      imageMap[id].push(img.document_url);
+
+const GetQCEntriesById = async (req, res) => {
+  try {
+   const { id } = req.query;
+    const entries = await QCEntry.findById(id)
+    if(!entries) {
+      return ErrorHandler(res, 404, "QC Entry not found");
     }
 
-    // Attach image URLs to each QC Entry
-    const enrichedEntries = entries.map(entry => ({
-      ...entry,
-      images: imageMap[entry._id.toString()] || []
-    }));
-
-    return ResponseOk(res, 200, 'QC Entries with images retrieved successfully', enrichedEntries);
+    return ResponseOk(res, 200, 'QC Entries with images retrieved successfully', entries);
   } catch (error) {
     console.error("Error retrieving QC Entries:", error);
     return ErrorHandler(res, 500, 'Failed to retrieve QC Entries', error.message || error);
@@ -201,10 +226,26 @@ const DeleteQcEntry = async (req, res) => {
   }
 };
 
+const GetQCEntriesOverview = async (req,res) =>{
+  try {
+    
+    const entries = await QCEntry.find({project_id: req.query.project_id})
+      .select('_id qc_name date siteName  sideSupervisor wiremanName wingOrLiftNo notes')
+      .sort({ date: -1 });  
+    return ResponseOk(res, 200, "QC Entries overview retrieved successfully", entries);
+  } catch (error) {
+    console.error("Error retrieving QC Entries overview:", error);
+    return ErrorHandler(res, 500, "Failed to retrieve QC Entries overview",error);
+    
+  }
+}
+
 
 module.exports = {
   CreateQCEntry,
   GetQCEntries,
+  GetQCEntriesById,
+  GetQCEntriesOverview,
   UpdateQCEntry,
   DeleteQcEntry
 };

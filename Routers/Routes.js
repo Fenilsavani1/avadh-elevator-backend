@@ -10,6 +10,7 @@ const AdminRouter = require("./Admin/AdminRoutes");
 const VendorRouter = require("./Vendor/VendorRoutes");
 const ElevatorRouter = require("./Elevator/ElevatorRoutes");
 const PreInstallRouter = require("./PreInstall/PreInstallRoutes");
+const DeliveryFormRouter = require("./DeliveryForm/DeliveryFormRoutes");
 
 Routes.use("/auth", AuthRouter);
 Routes.use("/erector",ErectorRouter)
@@ -21,5 +22,6 @@ Routes.use('/admin',AdminRouter)
 Routes.use('/vendor',VendorRouter)
 Routes.use('/elevator', ElevatorRouter);
 Routes.use('/pre_install', PreInstallRouter);
+Routes.use('/delivery_form', DeliveryFormRouter);
 
 module.exports = Routes;
