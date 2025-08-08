@@ -274,7 +274,17 @@ const DeleteVendor = async (req, res) => {
   }
 };
 
-
+const GetVendorById = async (req, res) => {
+  try {
+    // Fetch all vendors
+    const vendors = await Vendor.findById(req.query.id);
+    return ResponseOk(res, 200, "Vendors retrieved successfully", vendors);
+  } catch (error) {
+ 
+    console.error("[GetVendor]", error);
+    return ErrorHandler(res, 500, "Server error while retrieving vendors");
+  }
+};
 module.exports = {
   createMaterialSet,
   updateMaterialSet,
@@ -286,4 +296,5 @@ module.exports = {
   GetVendor,
   UpdateVendor,
   DeleteVendor,
+  GetVendorById
 }

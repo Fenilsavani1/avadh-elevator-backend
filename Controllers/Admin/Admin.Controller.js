@@ -27,7 +27,6 @@ const LoginAdmin = async (req, res) => {
 
 
   try {
-    // console.log("User model is", User);
     const user = await Users.findOne({
       $or: [
         { email },
@@ -115,17 +114,14 @@ const getRolePermissions = async (req, res) => {
       return ErrorHandler(res, 400, "Role ID is required");
     }
 
-    // Step 1: Find the role
     const role = await Roles.findOne({ id: roleId });
     if (!role) {
       return ErrorHandler(res, 404, "Role not found");
     }
 
-    // Step 2: Get all permissions assigned to the role
     const rolePermissionLinks = await Role_with_permission.find({ role_id: roleId });
     const permissionIds = rolePermissionLinks.map(rp => rp.permission_id);
 
-    // Step 3: Get permission details
     const permissions = await Permissions.find({ id: { $in: permissionIds } });
     console.log("firstname", permissions);
 
@@ -133,7 +129,6 @@ const getRolePermissions = async (req, res) => {
       return ErrorHandler(res, 404, "No permissions found for this role");
     }
 
-    // Step 4: Build final result
     const result = {
       role_id: role.id,
       role_name: role.name,
@@ -199,7 +194,6 @@ const AddAdminUser = async (req, res) => {
     }
 
 
-    // Check if user with email already exists and is not deleted
     const existingUser = await Users.findOne({
       email: email,
       is_deleted: 0,
@@ -210,10 +204,9 @@ const AddAdminUser = async (req, res) => {
     }
 
 
-    // Create new user
     const newUser = await Users.create({
       email: email,
-      password: password, // Assuming password will be hashed via pre-save middleware
+      password: password, 
       contact_number: contact_number,
       name: name,
     });
@@ -226,12 +219,12 @@ const AddAdminUser = async (req, res) => {
 
     await ActivityLog.create({
       user_id: req.user?._id || null,
-      action: 'ADD_ADMIN_USER',
+      action: 'ADD_USER',
       type: 'Message_Response',
       sub_type: 'Create',
-      message: `Admin user "${name}" was created with role ID ${role_id}.`,
-      title: 'Admin User Added',
-      created_by: req.user?._id || null
+      message: `User ${name} was added with role ID ${role_id}.`,
+      project_id:null,
+      title: 'User Added',
     });
 
 
@@ -260,7 +253,6 @@ const UpdateAdminUser = async (req, res) => {
 
     const userId = existingUserRole.user_id;
 
-    // Check for email conflict with another user
     const emailConflict = await Users.findOne({
       _id: { $ne: userId },
       email: email,
@@ -271,28 +263,26 @@ const UpdateAdminUser = async (req, res) => {
       return ErrorHandler(res, 400, "Another user with this email already exists");
     }
 
-    // Update User
     await Users.findByIdAndUpdate(userId, {
       email,
       contact_number,
       name,
     });
-const user = await Users.findById(userId);
-user.password = password;
-await user.save();
-    // Update Role Association
+      const user = await Users.findById(userId);
+      user.password = password;
+      await user.save();
     await User_Associate_With_Role.findByIdAndUpdate(userRoleId, {
       role_id: parseInt(role_id),
     });
 
     await ActivityLog.create({
       user_id: req.user?._id || null,
-      action: 'UPDATE_ADMIN_USER',
+      action: 'UPDATE_USER',
       type: 'Message_Response',
       sub_type: 'Update',
-      message: `Admin user "${name}" (ID: ${userId}) was updated.`,
-      title: 'Admin User Updated',
-      created_by: req.user?._id || null
+      message: `User Profile "${name}" has been updated.`,
+      title: 'User Updated',
+      project_id: null,
     });
 
 
@@ -319,8 +309,8 @@ const DeleteAdminUser = async (req, res) => {
 
     const userId = existingUserRole.user_id;
 
-    // Permanently delete the user and role association
     await Users.findByIdAndDelete(userId);
+    const user_details = await Users.findById(userId)
     await User_Associate_With_Role.findByIdAndDelete(userRoleId);
 
     await ActivityLog.create({
@@ -328,9 +318,9 @@ const DeleteAdminUser = async (req, res) => {
       action: 'DELETE_ADMIN_USER',
       type: 'Message_Response',
       sub_type: 'Delete',
-      message: `Admin user (ID: ${userId}) was permanently deleted.`,
+      message: `User ${user_details.name} was permanently deleted.`,
       title: 'Admin User Deleted',
-      created_by: req.user?._id || null
+      project_id: null,
     });
 
 
@@ -345,18 +335,15 @@ const AddRolesByAdmin = async (req, res) => {
   try {
     const { id, name } = req.body;
 
-    // Validate input
     if (!id || !name) {
       return ErrorHandler(res, 400, "Both 'id' and 'name' are required.");
     }
 
-    // Check if role with same id or name exists
     const existingRole = await Roles.findOne({ $or: [{ id }, { name }] });
     if (existingRole) {
       return ErrorHandler(res, 400, "Role with this ID or name already exists.");
     }
 
-    // Create new role
     const newRole = await Roles.create({ id, name });
 
     await ActivityLog.create({
@@ -364,9 +351,9 @@ const AddRolesByAdmin = async (req, res) => {
       action: 'CREATE_ROLE',
       type: 'Message_Response',
       sub_type: 'Create',
-      message: `New role "${name}" with ID ${id} was created.`,
+      message: `New role "${name}" was created.`,
       title: 'Role Created',
-      created_by: req.user?._id || null
+      project_id: null,
     });
 
 
@@ -402,7 +389,7 @@ const UpdateRole = async (req, res) => {
       sub_type: 'Update',
       message: `Role ID ${id} was updated to name "${name}".`,
       title: 'Role Updated',
-      created_by: req.user?._id || null
+      project_id: null,
     });
 
 
@@ -434,7 +421,7 @@ const DeleteRole = async (req, res) => {
       sub_type: 'Delete',
       message: `Role with ID ${id} was deleted.`,
       title: 'Role Deleted',
-      created_by: req.user?._id || null
+      project_id: null,
     });
 
 
@@ -462,7 +449,6 @@ const UpdatePermissionAdmin = async (req, res) => {
       return ErrorHandler(res, 400, "Either enable_permissions or disable_permissions must be true.");
     }
 
-    // Use bulk update instead of Promise.all
     await Permissions.updateMany(
       { id: { $in: permission_ids } },
       { $set: { status: updateStatus } }
@@ -475,7 +461,7 @@ const UpdatePermissionAdmin = async (req, res) => {
       sub_type: updateStatus === 1 ? 'Enable' : 'Disable',
       message: `Permissions ${updateStatus === 1 ? 'enabled' : 'disabled'}: [${permission_ids.join(', ')}]`,
       title: `Permissions ${updateStatus === 1 ? 'Enabled' : 'Disabled'}`,
-      created_by: req.user?._id || null
+      project_id: null,
     });
 
     return ResponseOk(res, 200, "Permissions updated successfully", {
@@ -498,7 +484,7 @@ const UpdateProjectStatus = async (req, res) => {
       return ErrorHandler(res, 400, "Project ID and status are required");
     }
 
-    const validStatuses = [1, 2, 3]; // Assuming 1: pending, 2: approved, 3: rejected
+    const validStatuses = [1, 2, 3]; 
     if (!validStatuses.includes(status)) {
       return ErrorHandler(res, 400, "Invalid status value");
     }
@@ -522,7 +508,6 @@ const UpdateProjectStatus = async (req, res) => {
       sub_type: 'Update',
       message: `Project  ${site_name} status updated to ${status}.`,
       title: 'Project Status Updated',
-      created_by: req.user?._id || null
     });
 
 
@@ -556,7 +541,6 @@ const DeleteProject = async (req, res) => {
       sub_type: 'Delete',
       message: `Project ${site_name} with ID ${projectId} was deleted.`,
       title: 'Project Deleted',
-      created_by: req.user?._id || null
     });
 
 

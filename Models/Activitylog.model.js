@@ -1,5 +1,3 @@
-// models/ActivityLog.model.js
-
 const mongoose = require('mongoose');
 
 const activityLogSchema = new mongoose.Schema({
@@ -28,9 +26,17 @@ const activityLogSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  created_by: {
+  user_name:{
+    type: String,
+    required: false,
+  },
+  user_email:{
+    type: String,
+    required: false,
+  },
+  project_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'users',
+    ref: 'projects',
     required: false,
   },
 });
