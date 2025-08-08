@@ -56,9 +56,9 @@ const registerUser = async (req, res) => {
 
 
 const loginUser = async (req, res) => {
-  const { contact_number, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!password || (!contact_number)) {
+  if (!password || (!email)) {
     return ErrorHandler(
       res,
       400,
@@ -69,7 +69,7 @@ const loginUser = async (req, res) => {
   try {
     const user = await Users.findOne({
       $or: [
-        contact_number ? { contact_number } : null
+        email ? { email } : null
       ].filter(Boolean)
     });
 
@@ -87,7 +87,6 @@ const loginUser = async (req, res) => {
       email: user.email,
       contact_number: user.contact_number
     };
-// console.log("payload", payload)
 
     const { token, expiresin } = await sendToken(payload);
 

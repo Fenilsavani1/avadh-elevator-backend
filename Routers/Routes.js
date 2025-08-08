@@ -11,6 +11,7 @@ const VendorRouter = require("./Vendor/VendorRoutes");
 const ElevatorRouter = require("./Elevator/ElevatorRoutes");
 const PreInstallRouter = require("./PreInstall/PreInstallRoutes");
 const DeliveryFormRouter = require("./DeliveryForm/DeliveryFormRoutes");
+const MechanicalQCRouter = require("./Mechanical_QC/MechanicalQCRoutes");
 
 Routes.use("/auth", AuthRouter);
 Routes.use("/erector",ErectorRouter)
@@ -23,5 +24,6 @@ Routes.use('/vendor',VendorRouter)
 Routes.use('/elevator', ElevatorRouter);
 Routes.use('/pre_install', PreInstallRouter);
 Routes.use('/delivery_form', DeliveryFormRouter);
+Routes.use('/mechanical_qc', MechanicalQCRouter);
 
 module.exports = Routes;

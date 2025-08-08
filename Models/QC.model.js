@@ -194,14 +194,6 @@ const MeachanicalQcSchema = new mongoose.mongoose.Schema({
     type: String,
     required: true
   },
-  engineer_sign : {
-    type: String,
-    required: true
-  },
-  erector_sign : {
-    type: String,
-    required: true
-  },
 },{
   timestamps: true,
   versionKey: false
@@ -210,19 +202,45 @@ const MeachanicalQcSchema = new mongoose.mongoose.Schema({
 const MeachanicalQc = mongoose.model('meachanical_qc', MeachanicalQcSchema);
 
 const MeachanicalQcFormSchema = new mongoose.Schema({
-  id: {
-    type: mongoose.Schema.Types.ObjectId,
-    auto: true
-  },
+
   parent_form_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'meachanical_qc',
+    required: true
+  },
+  // qc_checklist_no: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   required: true
+  // },
+  form_no: {
+    type: String,
+    required: true
+  },
+  sub_form_no: {
+    type: String,
+    required: true
+  },
+  form_type: {
+    type: String,
     required: true
   },
   form_data: {
     type: mongoose.Schema.Types.Mixed,
     required: true
   },
+  files: [
+        {
+            fileType: {
+                type: String,
+                enum: ['image', 'video'],
+                required: true
+            },
+            fileUrl: {
+                type: String,
+                required: true
+            }
+        }
+    ]
 }, {
   timestamps: true,
   versionKey: false
@@ -232,8 +250,6 @@ const MeachanicalQcForm = mongoose.model('meachanical_qc_form', MeachanicalQcFor
 
 module.exports = {
   QCEntry,
-  // NotesAndSignatures,
-  // ElectricalQcChecklist,
   MeachanicalQc,
   MeachanicalQcForm
 }

@@ -13,7 +13,6 @@ const mongoose = require('mongoose');
 
 
 const LoginAdmin = async (req, res) => {
-  console.log("User is:", typeof Users); // should be 'function'
   const { email, contact_number, password } = req.body;
 
   if (!password || (!email && !contact_number)) {
@@ -177,6 +176,20 @@ const GetUserById = async (req, res) => {
   }
 };
 
+const GetUserAll = async (req, res) => {
+  try {
+   
+    const user = await Users.find().select('id name email contact_number');
+    if (!user) {
+      return ErrorHandler(res, 404, "User not found");
+    }
+    return ResponseOk(res, 200, "User retrieved successfully",user);
+  } catch (error) {
+    console.error("GetUserById Error:", error);
+    return ErrorHandler(res, 500, "Server error while retrieving user");
+  }
+};
+ 
 const AddAdminUser = async (req, res) => {
   try {
     const { email, role_id, password, contact_number, name } = req.body;
@@ -232,15 +245,14 @@ const AddAdminUser = async (req, res) => {
 
 const UpdateAdminUser = async (req, res) => {
   try {
-    const { email, role_id, contact_number, name } = req.body;
-    const userRoleId = req.query.id; // This is the _id of User_Associate_With_Role document
+    const { email, role_id, contact_number, name,password } = req.body;
+    const userRoleId = req.query.id; 
 
     if (!email || !role_id || !contact_number || !name) {
       return ErrorHandler(res, 400, "All fields (name, email, contact_number, role_id) are required");
     }
 
-    // Find the user-role association
-    const existingUserRole = await User_Associate_With_Role.findById(userRoleId);
+    const existingUserRole = await User_Associate_With_Role.findOne({user_id: userRoleId});
 
     if (!existingUserRole) {
       return ErrorHandler(res, 404, "User association not found");
@@ -265,7 +277,9 @@ const UpdateAdminUser = async (req, res) => {
       contact_number,
       name,
     });
-
+const user = await Users.findById(userId);
+user.password = password;
+await user.save();
     // Update Role Association
     await User_Associate_With_Role.findByIdAndUpdate(userRoleId, {
       role_id: parseInt(role_id),
@@ -291,14 +305,13 @@ const UpdateAdminUser = async (req, res) => {
 
 const DeleteAdminUser = async (req, res) => {
   try {
-    const userRoleId = req.query.id; // ID of the User_Associate_With_Role document
+    const userRoleId = req.query.id;
 
     if (!userRoleId) {
       return ErrorHandler(res, 400, "User role association ID is required");
     }
 
-    // Find the user-role association
-    const existingUserRole = await User_Associate_With_Role.findById(userRoleId);
+    const existingUserRole = await User_Associate_With_Role.findOne({user_id: userRoleId});
 
     if (!existingUserRole) {
       return ErrorHandler(res, 404, "User role association not found");
@@ -682,5 +695,6 @@ module.exports = {
   DeleteProject,
   ViewProjectById,
   ManageRolePermissions,
-  GetStaticData
+  GetStaticData,
+  GetUserAll
 }
