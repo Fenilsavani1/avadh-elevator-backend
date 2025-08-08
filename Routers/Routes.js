@@ -12,6 +12,7 @@ const ElevatorRouter = require("./Elevator/ElevatorRoutes");
 const PreInstallRouter = require("./PreInstall/PreInstallRoutes");
 const DeliveryFormRouter = require("./DeliveryForm/DeliveryFormRoutes");
 const MechanicalQCRouter = require("./Mechanical_QC/MechanicalQCRoutes");
+const ActivityLogsRouter = require("./ActivityLogs/LogsRoutes");
 
 Routes.use("/auth", AuthRouter);
 Routes.use("/erector",ErectorRouter)
@@ -25,5 +26,6 @@ Routes.use('/elevator', ElevatorRouter);
 Routes.use('/pre_install', PreInstallRouter);
 Routes.use('/delivery_form', DeliveryFormRouter);
 Routes.use('/mechanical_qc', MechanicalQCRouter);
+Routes.use('/logs', ActivityLogsRouter);
 
 module.exports = Routes;

@@ -1,7 +1,7 @@
 const { Router } = require("express");
 
 const MaterialSet = require("../../Models/Project.model");
-const { createMaterialSet, addVendor, getMaterialSets, GetVendor, UpdateVendor, DeleteVendor, updateMaterialSet, deleteMaterialSet, getMaterialSetsByid, getMaterialSetsOverview } = require("../../Controllers/Vendor/Vendor.Controller");
+const { createMaterialSet, addVendor, getMaterialSets, GetVendor, UpdateVendor, DeleteVendor, updateMaterialSet, deleteMaterialSet, getMaterialSetsByid, getMaterialSetsOverview, GetVendorById } = require("../../Controllers/Vendor/Vendor.Controller");
 
 
 const VendorRouter = Router();
@@ -18,6 +18,6 @@ VendorRouter.post('/add_vendor', addVendor);
 VendorRouter.get('/get_vendor', GetVendor);
 VendorRouter.put('/update_vendor', UpdateVendor);
 VendorRouter.delete('/delete_vendor', DeleteVendor);
-
+VendorRouter.get('/get_vendor_by_id', GetVendorById);
 
 module.exports = VendorRouter;

@@ -1,7 +1,7 @@
-const {Project} = require('../../Models/Project.model'); // Update the path as needed
-const {Users,User_Associate_With_Role} = require('../../Models/User.model'); // Assuming you have a User model for supervisors
+const {Project} = require('../../Models/Project.model'); 
+const {Users,User_Associate_With_Role} = require('../../Models/User.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
-
+const {ActivityLog} = require('../../Models/Activitylog.model');
 const createProject = async (req, res) => {
   try {
     const {
@@ -19,7 +19,6 @@ const createProject = async (req, res) => {
       location, 
     } = req.body;
 
-    // Basic validation
     if (
       !site_name || !site_address || !client_name ||
       !client_mobile || !client_email || !gst_no ||
@@ -42,7 +41,14 @@ const createProject = async (req, res) => {
       additional_notes,
       location,
     });
-
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'ADD PROJECT',
+      type: 'Message_Response',
+      sub_type: 'ADD',
+      message: `Project ${site_name} with ID ${projectId} was deleted.`,
+      title: 'Project Deleted',
+    });
     return ResponseOk(res, 201, "Project created successfully", project);
   } catch (error) {
     console.error("[createProject]", error);
@@ -178,8 +184,6 @@ const ViewProject = async (req, res) => {
   }
 };
 
-
-
 const UpdateProject = async (req, res) => {
   try {
     const projectId = req.query.projectId
@@ -226,7 +230,6 @@ const UpdateProject = async (req, res) => {
   }
 };
 
-
 const ViewListOfSupervisors = async (req, res) => {
   try {
     const supervisors_Role = await User_Associate_With_Role.find({
@@ -247,7 +250,6 @@ const ViewListOfSupervisors = async (req, res) => {
     return ErrorHandler(res, 500, "Server error while retrieving supervisors");
   }
 };
-
 
 const GetProjectShortDetails   = async (req,res) =>{
   try {
