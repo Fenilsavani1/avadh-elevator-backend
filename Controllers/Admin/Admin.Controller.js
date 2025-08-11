@@ -518,39 +518,6 @@ const UpdateProjectStatus = async (req, res) => {
   }
 };
 
-const DeleteProject = async (req, res) => {
-  try {
-    const projectId = req.query.projectId;
-
-    if (!projectId) {
-      return ErrorHandler(res, 400, "Project ID is required");
-    }
-
-    const deletedProject = await Project.findByIdAndDelete(projectId);
-
-    if (!deletedProject) {
-      return ErrorHandler(res, 404, "Project not found");
-    }
-
-    const site_name = deletedProject.site_name || 'Unknown Project';
-
-    await ActivityLog.create({
-      user_id: req.user?._id || null,
-      action: 'DELETE_PROJECT',
-      type: 'Message_Response',
-      sub_type: 'Delete',
-      message: `Project ${site_name} with ID ${projectId} was deleted.`,
-      title: 'Project Deleted',
-    });
-
-
-    return ResponseOk(res, 200, "Project deleted successfully", deletedProject);
-  } catch (error) {
-    console.error("[DeleteProject]", error);
-    return ErrorHandler(res, 500, "Server error while deleting project");
-  }
-};
-
 const ViewProjectById = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -676,7 +643,6 @@ module.exports = {
   DeleteRole,
   UpdatePermissionAdmin,
   UpdateProjectStatus,
-  DeleteProject,
   ViewProjectById,
   ManageRolePermissions,
   GetStaticData,
