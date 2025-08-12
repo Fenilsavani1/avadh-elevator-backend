@@ -2,6 +2,9 @@ const { PreInstallation } = require("../../Models/Project.model");
 const { ResponseOk, ErrorHandler } = require("../../Utils/ResponseHandler");
 const path = require("path");
 const fs = require("fs");
+const { ActivityLog } = require("../../Models/Activitylog.model");
+const { Project } = require("../../Models/Project.model");
+const { Users } = require("../../Models/User.model");
 
 const CreatePreInstallation = async (req, res) => {
   try {
@@ -21,12 +24,12 @@ const CreatePreInstallation = async (req, res) => {
       return ErrorHandler(res, 400, "Required fields missing");
     }
 
-   const uploadedFiles = req.files || [];
+    const uploadedFiles = req.files || [];
 
-const files = uploadedFiles.map(file => ({
-  fileType: file.mimetype.startsWith('video') ? 'video' : 'image',
-  fileUrl: `public/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`
-}));
+    const files = uploadedFiles.map(file => ({
+      fileType: file.mimetype.startsWith('video') ? 'video' : 'image',
+      fileUrl: `public/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`
+    }));
 
     const newPreInstallEntry = await PreInstallation.create({
       name,
@@ -38,9 +41,19 @@ const files = uploadedFiles.map(file => ({
       whitewash_wiring,
       machine_room_ladder_door_window,
       project_id,
-      files    
+      files
     });
-
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'CREATE_PRE_INSTALLATION',
+      type: 'Create',
+      description: `User ${user_details.name} has added pre installation steps named ${name} for project "${projectDetails.site_name}".`,
+      title: 'Create Pre Installation',
+      project_id: project_id,
+    });
     return ResponseOk(res, 201, "Pre Install Entry created successfully", newPreInstallEntry);
 
   } catch (error) {
@@ -53,7 +66,7 @@ const files = uploadedFiles.map(file => ({
 
 const GetAllPreInstallations = async (req, res) => {
   try {
-    const allEntries = await PreInstallation.find({project_id: req.query.project_id}); 
+    const allEntries = await PreInstallation.find({ project_id: req.query.project_id });
     console.log("object", allEntries);
     return ResponseOk(res, 200, "Fetched all entries", allEntries);
   } catch (error) {
@@ -100,8 +113,8 @@ const UpdatePreInstallation = async (req, res) => {
     const idsToDelete = Array.isArray(deletedFileId)
       ? deletedFileId
       : deletedFileId
-      ? [deletedFileId]
-      : [];
+        ? [deletedFileId]
+        : [];
 
     // 🧹 DELETE FILES (DB + FILE SYSTEM)
     if (idsToDelete.length > 0) {
@@ -116,7 +129,7 @@ const UpdatePreInstallation = async (req, res) => {
             fileToRemove.fileUrl.replace("/public", "public")
           );
           if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath); 
+            fs.unlinkSync(filePath);
           }
         }
       }
@@ -129,13 +142,12 @@ const UpdatePreInstallation = async (req, res) => {
     const uploadedFiles = req.files || [];
     const newFiles = uploadedFiles.map((file) => ({
       fileType: file.mimetype.startsWith("video") ? "video" : "image",
-      fileUrl: `/public/uploads/${
-        file.mimetype.startsWith("video") ? "videos" : "images"
-      }/${file.filename}`,
+      fileUrl: `/public/uploads/${file.mimetype.startsWith("video") ? "videos" : "images"
+        }/${file.filename}`,
     }));
 
     if (newFiles.length > 0) {
-      existingEntry.files.push(...newFiles); 
+      existingEntry.files.push(...newFiles);
     }
 
     if (name !== undefined) existingEntry.name = name;
@@ -156,6 +168,18 @@ const UpdatePreInstallation = async (req, res) => {
     if (project_id !== undefined) existingEntry.project_id = project_id;
 
     await existingEntry.save();
+    const findPreInstallation = await PreInstallation.findById(id);
+      const user_details = await Users.findById(req.auth.id);
+            const projectDetails = await Project.findOne({_id:findPreInstallation.project_id}).select('site_name');
+            await ActivityLog.create({
+            user_id: req.auth?.id || null,
+            user_name: user_details.name,
+            action: 'UPDATE_PRE_INSTALLATION',
+            type: 'Update',
+            description: `User ${user_details.name} has updated pre installation steps named ${name} for project "${projectDetails.site_name}".`,
+            title: 'Update Pre Installation',
+            project_id:project_id,
+            });
 
     return ResponseOk(res, 200, "Entry updated successfully", existingEntry);
   } catch (error) {
@@ -174,11 +198,22 @@ const DeletePreInstallation = async (req, res) => {
   try {
     const { id } = req.query;
 
+    const findPreInstallation = await PreInstallation.findById(id);
     const entry = await PreInstallation.findById(id);
     if (!entry) return ErrorHandler(res, 404, "Entry not found");
 
-   await entry.deleteOne();
-
+    await entry.deleteOne();
+      const user_details = await Users.findById(req.auth.id);
+            const projectDetails = await Project.findOne({_id:findPreInstallation.project_id}).select('site_name');
+            await ActivityLog.create({
+            user_id: req.auth?.id || null,
+            user_name: user_details.name,
+            action: 'DATE_PRE_INSTALLATION',
+            type: 'Delete',
+            description: `User ${user_details.name} has delete pre installation steps named ${findPreInstallation.name} for project "${projectDetails.site_name}".`,
+            title: 'Update Pre Installation',
+            project_id:findPreInstallation.project_id,
+            });
     return ResponseOk(res, 200, "Entry deleted successfully");
   } catch (error) {
     console.log("object", error);
@@ -189,7 +224,7 @@ const DeletePreInstallation = async (req, res) => {
 
 const GetAllPreInstallationsOverview = async (req, res) => {
   try {
-    const allEntries = await PreInstallation.find({project_id: req.query.project_id}).select("_id name lift_details lift_shaft_plaster pit_water_ppc machine_room_pcc lift_machine_clean whitewash_wiring machine_room_ladder_door_window");
+    const allEntries = await PreInstallation.find({ project_id: req.query.project_id }).select("_id name lift_details lift_shaft_plaster pit_water_ppc machine_room_pcc lift_machine_clean whitewash_wiring machine_room_ladder_door_window");
 
     const UpdatedData = {
       entries: allEntries.map(entry => {

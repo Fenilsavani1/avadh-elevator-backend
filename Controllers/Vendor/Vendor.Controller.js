@@ -2,7 +2,9 @@ const { ErrorHandler, ResponseOk } = require("../../Utils/ResponseHandler");
 const mongoose = require("mongoose");
 const { MaterialSet } = require("../../Models/Project.model");
 const { Vendor } = require("../../Models/Project.model");
-
+const { ActivityLog } = require("../../Models/Activitylog.model");
+const { Project } = require("../../Models/Project.model");
+const { Users } = require("../../Models/User.model");
 const createMaterialSet = async (req, res) => {
   try {
     const {
@@ -26,6 +28,18 @@ const createMaterialSet = async (req, res) => {
       project_id,
       materialSetTitle,
       vendorOrderList
+    });
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'CREATE_MATERIAL_SET',
+      type: 'Create',
+      description: `User ${user_details.name} has added material set named ${materialSetTitle} for project "${projectDetails.site_name}".`,
+      title: 'Create Material Set',
+      project_id: project_id,
     });
 
     return ResponseOk(res, 200, "Material Set created successfully", materialSet);
@@ -62,12 +76,24 @@ const updateMaterialSet = async (req, res) => {
         materialSetTitle,
         vendorOrderList
       },
-      { new: true } 
+      { new: true }
     );
 
     if (!updatedMaterialSet) {
       return ErrorHandler(res, 404, "Material Set not found");
     }
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'UPDATE_MATERIAL_SET',
+      type: 'Update',
+      description: `User ${user_details.name} has update material set named ${materialSetTitle} for project "${projectDetails.site_name}".`,
+      title: 'Update Material Set',
+      project_id: project_id,
+    });
 
     return ResponseOk(res, 200, "Material Set updated successfully", updatedMaterialSet);
   } catch (error) {
@@ -78,9 +104,9 @@ const updateMaterialSet = async (req, res) => {
 
 const getMaterialSets = async (req, res) => {
   try {
-const materialSets = await MaterialSet.find({ project_id: req.query.project_id });
-   
-if(!materialSets || materialSets.length === 0) {
+    const materialSets = await MaterialSet.find({ project_id: req.query.project_id });
+
+    if (!materialSets || materialSets.length === 0) {
       return ErrorHandler(res, 404, "No material sets found for this project");
     }
 
@@ -100,13 +126,23 @@ const deleteMaterialSet = async (req, res) => {
     const entry = await MaterialSet.findById(id);
     if (!entry) return ErrorHandler(res, 404, "Entry not found");
 
-   await entry.deleteOne();
-
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: entry.project_id }).select('site_name');
+    await entry.deleteOne();
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'DELETE_MATERIAL_SET',
+      type: 'Delete',
+      description: `User ${user_details.name} has deleted material set named ${entry.materialSetTitle} for project "${projectDetails.site_name}".`,
+      title: 'Delete Material Set',
+      project_id: entry.project_id,
+    });
     return ResponseOk(res, 200, "Entry deleted successfully");
   } catch (error) {
     console.error("error", error);
     return ErrorHandler(res, 500, "Server error while deleting Material Set");
-    
+
   }
 }
 
@@ -161,7 +197,7 @@ const getMaterialSetsOverview = async (req, res) => {
 
 const getMaterialSetsByid = async (req, res) => {
   try {
-      const { id } = req.query;
+    const { id } = req.query;
     const materialSets = await MaterialSet.findById(id)
     // .populate('project_id', 'site_name')
     // .lean();
@@ -193,21 +229,27 @@ const addVendor = async (req, res) => {
     console.log("company_name", company_name);
     console.log("mobile_number", mobile_number);
 
-    // Check if vendor already exists
     const existingVendor = await Vendor.findOne({ mobile_number });
     if (existingVendor) {
       return ErrorHandler(res, 400, "Vendor with this mobile number already exists");
     }
 
-    // Create new vendor
     const newVendor = await Vendor.create({
       name,
       company_name,
       mobile_number
     });
 
-    console.log("Created:", newVendor);
-
+    const user_details = await Users.findById(req.auth.id);
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'ADD_VENDOR',
+      type: 'Add',
+      description: `User ${user_details.name} has added vendor ${name}.`,
+      title: 'Add Vendor',
+      project_id: null,
+    });
     return ResponseOk(res, 201, "Vendor added successfully", newVendor);
   } catch (error) {
     console.error("Error:", error);
@@ -217,21 +259,31 @@ const addVendor = async (req, res) => {
 
 const UpdateVendor = async (req, res) => {
   try {
-    const  id  = req.query.id;
+    const id = req.query.id;
     const { name, company_name, mobile_number } = req.body;
     if (!name || !company_name || !mobile_number) {
       return ErrorHandler(res, 400, "All required fields must be provided");
     }
-    // Check if vendor exists
     const existingVendor = await Vendor.findById(id);
     if (!existingVendor) {
       return ErrorHandler(res, 404, "Vendor not found");
     }
-    // Update vendor details
     existingVendor.name = name;
     existingVendor.company_name = company_name;
     existingVendor.mobile_number = mobile_number;
     const updatedVendor = await existingVendor.save();
+
+    const user_details = await Users.findById(req.auth.id);
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'UPDATE_VENDOR',
+      type: 'Update',
+      description: `User ${user_details.name} has update vendor ${name}.`,
+      title: 'Update Vendor',
+      project_id: null,
+    });
+
     return ResponseOk(res, 200, "Vendor updated successfully", updatedVendor);
   } catch (error) {
     console.error("[UpdateVendor]", error);
@@ -256,16 +308,24 @@ const DeleteVendor = async (req, res) => {
   try {
     const { id } = req.query;
 
-    // Validate ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return ErrorHandler(res, 400, "Invalid vendor ID");
     }
-
-    // Find and delete the vendor
+    const existingVendor = await Vendor.findById(id);
     const deletedVendor = await Vendor.findByIdAndDelete(id);
     if (!deletedVendor) {
       return ErrorHandler(res, 404, "Vendor not found");
     }
+    const user_details = await Users.findById(req.auth.id);
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'DELETE_VENDOR',
+      type: 'Delete',
+      description: `User ${user_details.name} has deleted vendor ${existingVendor.name}.`,
+      title: 'Delete Vendor',
+      project_id: null,
+    });
 
     return ResponseOk(res, 200, "Vendor deleted successfully", deletedVendor);
   } catch (error) {
@@ -276,11 +336,10 @@ const DeleteVendor = async (req, res) => {
 
 const GetVendorById = async (req, res) => {
   try {
-    // Fetch all vendors
     const vendors = await Vendor.findById(req.query.id);
     return ResponseOk(res, 200, "Vendors retrieved successfully", vendors);
   } catch (error) {
- 
+
     console.error("[GetVendor]", error);
     return ErrorHandler(res, 500, "Server error while retrieving vendors");
   }

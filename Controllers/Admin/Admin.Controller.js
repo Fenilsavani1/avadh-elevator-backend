@@ -5,6 +5,7 @@ const { Permissions } = require('../../Models/User.model');
 const { Project } = require('../../Models/Project.model');
 const { Static_Data_Schema } = require('../../Models/StaticData.model');
 const { ActivityLog } = require('../../Models/Activitylog.model');
+const { Elevators } = require('../../Models/Project.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -216,16 +217,18 @@ const AddAdminUser = async (req, res) => {
       user_id: newUser._id,
       is_allowed_email: 1,
     });
-
+    const user_details = await Users.findById(req.auth.id)
     await ActivityLog.create({
-      user_id: req.user?._id || null,
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
       action: 'ADD_USER',
-      type: 'Message_Response',
-      sub_type: 'Create',
-      message: `User ${name} was added with role ID ${role_id}.`,
-      project_id:null,
+      type: 'Create',
+      description: `User with name ${name} was added with role ID ${role_id}.`,
       title: 'User Added',
+      project_id:null,
     });
+
+
 
 
     return ResponseOk(res, 200, newUser, "User added successfully");
@@ -275,14 +278,15 @@ const UpdateAdminUser = async (req, res) => {
       role_id: parseInt(role_id),
     });
 
+    const user_details = await Users.findById(req.auth.id)
     await ActivityLog.create({
-      user_id: req.user?._id || null,
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
       action: 'UPDATE_USER',
-      type: 'Message_Response',
-      sub_type: 'Update',
-      message: `User Profile "${name}" has been updated.`,
+      type: 'Update',
+      description: `User with profile name as ${name}has been updated.`,
       title: 'User Updated',
-      project_id: null,
+      project_id:null,
     });
 
 
@@ -314,14 +318,15 @@ const DeleteAdminUser = async (req, res) => {
     await User_Associate_With_Role.findByIdAndDelete(userRoleId);
 
     await ActivityLog.create({
-      user_id: req.user?._id || null,
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
       action: 'DELETE_ADMIN_USER',
-      type: 'Message_Response',
-      sub_type: 'Delete',
-      message: `User ${user_details.name} was permanently deleted.`,
-      title: 'Admin User Deleted',
+      type:  'Delete',
+      description: `User with profile name as ${user_details.name} was permanently deleted.`,
+      title: 'User Deleted',
       project_id: null,
     });
+
 
 
     return ResponseOk(res, 200, "User permanently deleted");
@@ -629,6 +634,88 @@ const GetStaticData = async (req, res) => {
   }
 };
 
+const DashboardKPI = async (req,res) =>{
+  try {
+    
+    const ProjectCount = await Project.countDocuments();
+    const TotalElevators = await Elevators.countDocuments();
+
+    return ResponseOk(res, 200, "Dashboard KPIs fetched successfully", {
+      ProjectCount,
+      TotalElevators
+    });
+  } catch (error) {
+    console.error("Error in DashboardKPI:", error);
+    return ErrorHandler(res, 500, "Failed to fetch dashboard KPIs");  
+  }
+}
+
+
+const GetProjectListDashboard   = async (req,res) =>{
+  try {
+      const projects = await Project.aggregate([
+      {
+        $lookup: {
+          from: "paymententries",
+          localField: "_id",
+          foreignField: "project_id",
+          as: "payment_details"
+        }
+      },
+      {
+        $addFields: {
+          amount_received: {
+            $sum: "$payment_details.payment_Made"
+          }
+        }
+      },
+      {
+        $addFields: {
+          amount_remaining: {
+            $subtract: ["$payment_amount", "$amount_received"]
+          },
+          payment_progress: {
+            $cond: [
+              { $gt: ["$payment_amount", 0] },
+              {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$amount_received", "$payment_amount"] },
+                      100
+                    ]
+                  },
+                  2
+                ]
+              },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          site_name: 1,
+          payment_amount: 1,
+          amount_received: 1,
+          amount_remaining: 1,
+          payment_progress: 1,
+        }
+      }
+    ]);
+
+    if (!projects || projects.length === 0) {
+      return ErrorHandler(res, 404, "No projects found");
+    }
+      return ResponseOk(res, 200, "Projects retrieved successfully", projects);
+  } catch (error) {
+    console.error("Error in GetProjectShortDetails:", error);
+    return ErrorHandler(res, 500, "Failed to retrieve project short details", error);
+    
+  }
+}
+
 module.exports = {
   LoginAdmin,
   GetPermissionAdmin,
@@ -646,5 +733,7 @@ module.exports = {
   ViewProjectById,
   ManageRolePermissions,
   GetStaticData,
-  GetUserAll
+  GetUserAll,
+  DashboardKPI,
+  GetProjectListDashboard
 }

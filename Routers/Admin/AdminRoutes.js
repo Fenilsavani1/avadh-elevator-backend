@@ -1,6 +1,6 @@
 const { Router } = require("express");
 
-const { GetPermissionAdmin, LoginAdmin, GetListOfRole, getRolePermissions, AddAdminUser, UpdateAdminUser, DeleteAdminUser, AddRolesByAdmin, UpdateRole, DeleteRole, UpdatePermissionAdmin, UpdateProjectStatus, ViewProjectById, GetUserById, ManageRolePermissions, GetStaticData, GetUserAll } = require("../../Controllers/Admin/Admin.Controller");
+const { GetPermissionAdmin, LoginAdmin, GetListOfRole, getRolePermissions, AddAdminUser, UpdateAdminUser, DeleteAdminUser, AddRolesByAdmin, UpdateRole, DeleteRole, UpdatePermissionAdmin, UpdateProjectStatus, ViewProjectById, GetUserById, ManageRolePermissions, GetStaticData, GetUserAll, DashboardKPI, GetProjectListDashboard } = require("../../Controllers/Admin/Admin.Controller");
 
 
 const AdminRouter = Router();
@@ -22,6 +22,8 @@ AdminRouter.get('/get_user_by_id', GetUserById);
 AdminRouter.get('/get_all_user', GetUserAll);
 AdminRouter.post('/manage_role_permissions', ManageRolePermissions); 
 AdminRouter.get('/get_static_data',GetStaticData)
+AdminRouter.get('/get_dashboard_kpi',DashboardKPI)
+AdminRouter.get('/get_list_dashboard_project',GetProjectListDashboard)
 
 
 module.exports = AdminRouter;

@@ -3,7 +3,9 @@ const { Image } = require('../../Models/Images.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
 const path = require('path');
 const fs = require("fs");
-
+const { ActivityLog } = require('../../Models/Activitylog.model');
+const { Project } = require('../../Models/Project.model');
+const { Users } = require('../../Models/User.model');
 
 const CreateHandOverForm = async (req, res) => {
   try {
@@ -62,6 +64,17 @@ const CreateHandOverForm = async (req, res) => {
     if (complaints.length > 0) {
       await ComplaintForm.insertMany(complaints);
     }
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: newForm.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'ADD_HANDOVER_FORM',
+      type: 'Add',
+      description: `User ${user_details.name} has added handover form inside project ${projectDetails.site_name}.`,
+      title: 'Add HandOver Form',
+      project_id: newForm.project_id,
+    });
 
     return ResponseOk(res, 201, "HandOver form created successfully", {
       form: newForm,
@@ -174,7 +187,17 @@ const UpdateHandOverForm = async (req, res) => {
     if (complaints.length > 0) {
       await ComplaintForm.insertMany(complaints);
     }
-
+  const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: existingForm.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'UPDATE_HANDOVER_FORM',
+      type: 'Update',
+      description: `User ${user_details.name} has update handover form inside project ${projectDetails.site_name}.`,
+      title: 'Update HandOver Form',
+      project_id: existingForm.project_id,
+    });
 
     return ResponseOk(res, 200, "HandOver form updated successfully", existingForm);
   } catch (error) {
@@ -266,6 +289,17 @@ const DeleteHandOverForm = async (req, res) => {
     if (!deletedForm) {
       return ErrorHandler(res, 404, "HandOverForm not found");
     }
+  const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: deletedForm.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'DELETE_HANDOVER_FORM',
+      type: 'Delete',
+      description: `User ${user_details.name} has delete handover form inside project ${projectDetails.site_name}.`,
+      title: 'Delete HandOver Form',
+      project_id: deletedForm.project_id,
+    });
 
 
     return ResponseOk(res, 200, "HandOver form deleted successfully");

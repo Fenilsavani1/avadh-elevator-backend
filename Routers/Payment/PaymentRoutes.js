@@ -1,7 +1,7 @@
 const { Router } = require("express");
 
 const { HandOverForm } = require('../../Models/HandOverForm.model')
-const { createPaymentEntry, list_of_payment_entries } = require("../../Controllers/Payment/Payment.Controller");
+const { createPaymentEntry, list_of_payment_entries, updatePaymentEntry, DeletePaymentEntry } = require("../../Controllers/Payment/Payment.Controller");
 const { GetPaymentDataReport, GetYearlyPaymentReport } = require("../../Controllers/Reports/Reports.Controller");
 
 
@@ -9,6 +9,8 @@ const PaymentRouter = Router();
 
 PaymentRouter.post('/payment-entry', createPaymentEntry);
 PaymentRouter.get('/list_payment_entries', list_of_payment_entries);
+PaymentRouter.post('/update_payment_entry', updatePaymentEntry);
+PaymentRouter.post('/delete_payment_entry', DeletePaymentEntry);
 
 
 

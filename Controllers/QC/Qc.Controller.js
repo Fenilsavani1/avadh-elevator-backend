@@ -4,7 +4,9 @@ const { ResponseOk, ErrorHandler } = require("../../Utils/ResponseHandler");
 const { json } = require("sequelize");
 const path = require("path");
 const fs = require("fs");
-
+const { ActivityLog } = require("../../Models/Activitylog.model");
+const { Project } = require("../../Models/Project.model");  
+const { Users } = require("../../Models/User.model");
 
 const CreateQCEntry = async (req, res) => {
   try {
@@ -49,6 +51,17 @@ const CreateQCEntry = async (req, res) => {
       inspection_data
     });
 
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: newQCEntry.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'ADD_ELECTRICAL_QC',
+      type: 'Create',
+      description: `User ${user_details.name} has added electrical qc named ${qc_name} inside project ${projectDetails.site_name}.`,
+      title: 'Create Electrical QC',
+      project_id: newQCEntry.project_id,
+    });
 
     return ResponseOk(res, 201, "QC Entry created successfully", newQCEntry);
 
@@ -96,7 +109,6 @@ const UpdateQCEntry = async (req, res) => {
     if (sideSupervisor !== undefined) updateFields.sideSupervisor = sideSupervisor;
     if (wiremanName !== undefined) updateFields.wiremanName = wiremanName;
     // // updateFields.project_id = project_id;
-    // if (project_id !== undefined) updateFields.project_id = project_id;
 
     if (inspection_data !== undefined) {
       const cleanedInspectionData = Array.isArray(inspection_data)
@@ -128,7 +140,6 @@ const UpdateQCEntry = async (req, res) => {
 
 
     let updatedFiles = currentEntry.files || [];
-console.log("deletedImg",deletedImg);
 let UpdateddeletedImgIds = JSON.parse(deletedImg || "[]");
 
     if (UpdateddeletedImgIds.length > 0) {
@@ -160,6 +171,18 @@ updateFields.files = updatedFiles;
       { $set: updateFields },
       { new: true }
     );
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: updatedQCEntry.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'UPDATE_ELECTRICAL_QC',
+      type: 'Update',
+      description: `User ${user_details.name} has update electrical qc named ${updatedQCEntry.qc_name} inside project ${projectDetails.site_name}.`,
+      title: 'Update Electrical QC',
+      project_id: updatedQCEntry.project_id,
+    });
 
     return ResponseOk(res, 200, "QC Entry updated successfully", {
       entry: updatedQCEntry,
@@ -216,9 +239,17 @@ const DeleteQcEntry = async (req, res) => {
       return ErrorHandler(res, 404, "QC Entry not found");
     }
 
-    // Delete associated images
-    await Image.deleteMany({ table_type: "QCEntry", table_id: id });
-
+  const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: deletedEntry.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'DELETE_ELECTRICAL_QC',
+      type: 'Delete',
+      description: `User ${user_details.name} has deleted electrical qc named ${deletedEntry.qc_name} inside project ${projectDetails.site_name}.`,
+      title: 'Delete Electrical QC',
+      project_id: deletedEntry.project_id,
+    });
     return ResponseOk(res, 200, "QC Entry deleted successfully");
   } catch (error) {
     console.error("Error deleting QC Entry:", error);

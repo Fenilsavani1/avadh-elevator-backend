@@ -4,7 +4,7 @@ const { Elevators } = require('../../Models/Project.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
 const { ActivityLog } = require('../../Models/Activitylog.model');
 const { Project } = require('../../Models/Project.model'); 
-
+const { Users } = require('../../Models/User.model');
 const CreateElevator = async (req, res) => {
     try {
         const {
@@ -80,6 +80,18 @@ const CreateElevator = async (req, res) => {
         });
 
 
+            const user_details = await Users.findById(req.auth.id);
+            const projectDetails = await Project.findById(project_id).select('site_name');
+            await ActivityLog.create({
+            user_id: req.auth?.id || null,
+            user_name: user_details.name,
+            action: 'ADD_ELEVATOR',
+            type: 'Create',
+            description: `User ${user_details.name} has added an elevator named "${elevator_name}" to project "${projectDetails.site_name}".`,
+            title: 'Elevator Added',
+            project_id:project_id,
+            });
+
         return ResponseOk(res, 201, "Elevator created successfully", savedElevator);
     } catch (error) {
         console.error("Error creating elevator:", error);
@@ -102,25 +114,23 @@ const UpdateElevator = async (req, res) => {
         if (!updatedElevator) {
             return ErrorHandler(res, 404, "Elevator not found");
         }
-        const projectData = await Project.findById(updatedElevator.project_id).select('site_name');
-        const site_name = projectData ? projectData.site_name : 'Unknown Project';
-
-        await ActivityLog.create({
-            user_id: req.user?._id || null,
+        const project_ID = updatedElevator.project_id;
+            const user_details = await Users.findById(req.auth.id);
+            const projectDetails = await Project.findOne({_id:updatedElevator.project_id}).select('site_name');
+            await ActivityLog.create({
+            user_id: req.auth?.id || null,
+            user_name: user_details.name,
             action: 'UPDATE_ELEVATOR',
-            type: 'Message_Response',
-            sub_type: 'Update',
-            message: `Elevator "${updatedElevator.elevator_name}" was updated under project "${site_name}".`,
+            type: 'Update',
+            description: `User ${user_details.name} has updated an elevator named "${updatedElevator.elevator_name}" of project "${projectDetails.site_name}".`,
             title: 'Elevator Updated',
-            created_by: req.user?._id || null
-        });
-
+            project_id:updatedElevator.project_id,
+            });
         return ResponseOk(res, 200, "Elevator updated successfully", updatedElevator);
     } catch (error) {
         console.error("Error updating elevator:", error);
         return ErrorHandler(res, 500, "Failed to update elevator", error);
     }
-
 };
 
 const GetElevatorById = async (req, res) => {
@@ -154,15 +164,17 @@ const DeleteElevator = async (req, res) => {
 
     const deletedElevator = await Elevators.findByIdAndDelete(elevatorId);
 
-    await ActivityLog.create({
-      user_id: req.user?._id || null,
-      action: 'DELETE_ELEVATOR',
-      type: 'Message_Response',
-      sub_type: 'Delete',
-      message: `Elevator "${elevatorToDelete.elevator_name}" was deleted from project "${site_name}".`,
-      title: 'Elevator Deleted',
-      created_by: req.user?._id || null
-    });
+            const user_details = await Users.findById(req.auth.id);
+            const projectDetails = await Project.findOne({_id:elevatorToDelete.project_id}).select('site_name');
+            await ActivityLog.create({
+            user_id: req.auth?.id || null,
+            user_name: user_details.name,
+            action: 'DELETE_ELEVATOR',
+            type: 'Delete',
+            description: `User ${user_details.name} has deleted an elevator named "${elevatorToDelete.elevator_name}" of project "${projectDetails.site_name}".`,
+            title: 'Elevator Deleted',
+            project_id:elevatorToDelete.project_id,
+            });
 
     return ResponseOk(res, 200, "Elevator deleted successfully", deletedElevator);
   } catch (error) {

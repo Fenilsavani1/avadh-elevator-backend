@@ -17,7 +17,7 @@ VendorRouter.get('/get_material_set_overview', getMaterialSetsOverview);
 VendorRouter.post('/add_vendor', addVendor);
 VendorRouter.get('/get_vendor', GetVendor);
 VendorRouter.put('/update_vendor', UpdateVendor);
-VendorRouter.delete('/delete_vendor', DeleteVendor);
+VendorRouter.post('/delete_vendor', DeleteVendor);
 VendorRouter.get('/get_vendor_by_id', GetVendorById);
 
 module.exports = VendorRouter;
