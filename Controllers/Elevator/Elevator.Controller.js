@@ -69,17 +69,6 @@ const CreateElevator = async (req, res) => {
         const savedElevator = await newElevator.save();
 
 
-        await ActivityLog.create({
-            user_id: req.user?._id || null,
-            action: 'CREATE_ELEVATOR',
-            type: 'Message_Response',
-            sub_type: 'Create',
-            message: `Elevator "${elevator_name}" was created under project "${site_name}".`,
-            title: 'Elevator Created',
-            created_by: req.user?._id || null
-        });
-
-
             const user_details = await Users.findById(req.auth.id);
             const projectDetails = await Project.findById(project_id).select('site_name');
             await ActivityLog.create({

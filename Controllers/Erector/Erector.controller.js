@@ -125,18 +125,29 @@ const GetAllErectors = async (req, res) => {
       const terms = allTerms.filter(term => term.erector_id.toString() === erector._id.toString());
       const payments = allPayments.filter(pay => pay.erector_id.toString() === erector._id.toString());
 
+      const totalAmount = terms.reduce((sum, term) => sum + Number(term.total_charges || 0), 0);
+      const amountPaid = payments.reduce((sum, pay) => sum + Number(pay.payment_amount || 0), 0);
+      const remaining = totalAmount - amountPaid;
+      const progress = totalAmount > 0 ? ((amountPaid / totalAmount) * 100).toFixed(2) : 0;
+
       return {
         ...erector,
         installation_terms: terms,
-        payment_records: payments
+        payment_records: payments,
+        total_amount: totalAmount,
+        amount_paid: amountPaid,
+        remaining_amount: remaining,
+        progress_percentage: parseFloat(progress)
       };
     });
 
-    return ResponseOk(res, 200, 'All erectors with terms and payments fetched successfully', enrichedErectors);
+    return ResponseOk(res, 200, 'All erectors with terms, payments, and progress fetched successfully', enrichedErectors);
   } catch (error) {
     return ErrorHandler(res, 500, 'Failed to fetch erector data', error);
   }
 };
+
+
 
 const GetErectorsById = async (req, res) => {
   try {
@@ -161,15 +172,33 @@ const GetErectorsById = async (req, res) => {
 
 const GetErectorsOverview = async (req, res) => {
   try {
-    const erectors = await Erector.find({ project_id: req.query.project_id }).select('_id erector_name mobile_no date total_lift types_lift location').lean();
-    const enrichedErectors = erectors.map((erector) => {
-      return {
-        ...erector
+    const erectors = await Erector.find({ project_id: req.query.project_id })
+      .select('_id erector_name mobile_no date total_lift types_lift location')
+      .lean();
 
+    const allTerms = await InstallationTerms.find().lean();
+    const allPayments = await PaymentRecord.find().lean();
+
+    const enrichedErectors = erectors.map((erector) => {
+      const terms = allTerms.filter(term => term.erector_id.toString() === erector._id.toString());
+      const payments = allPayments.filter(pay => pay.erector_id.toString() === erector._id.toString());
+
+      // Safely convert string values to numbers before summing
+      const totalAmount = terms.reduce((sum, term) => sum + Number(term.total_charges || 0), 0);
+      const amountPaid = payments.reduce((sum, pay) => sum + Number(pay.payment_amount || 0), 0);
+      const remaining = totalAmount - amountPaid;
+      const progress = totalAmount > 0 ? ((amountPaid / totalAmount) * 100).toFixed(2) : 0;
+
+      return {
+        ...erector,
+        total_amount: totalAmount,
+        amount_paid: amountPaid,
+        remaining_amount: remaining,
+        progress_percentage: parseFloat(progress)
       };
     });
 
-    return ResponseOk(res, 200, 'All erectors with terms and payments fetched successfully', enrichedErectors);
+    return ResponseOk(res, 200, 'All erectors overview fetched successfully', enrichedErectors);
   } catch (error) {
     return ErrorHandler(res, 500, 'Failed to fetch erector data', error);
   }

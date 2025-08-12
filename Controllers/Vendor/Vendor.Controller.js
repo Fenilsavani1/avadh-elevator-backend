@@ -245,7 +245,7 @@ const addVendor = async (req, res) => {
       user_id: req.auth?.id || null,
       user_name: user_details.name,
       action: 'ADD_VENDOR',
-      type: 'Add',
+      type: 'Create',
       description: `User ${user_details.name} has added vendor ${name}.`,
       title: 'Add Vendor',
       project_id: null,

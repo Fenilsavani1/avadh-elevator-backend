@@ -34,7 +34,7 @@ const createPaymentEntry = async (req, res) => {
       user_id: req.auth?.id || null,
       user_name: user_details.name,
       action: 'ADD_PAYMENT_ENTRY',
-      type: 'Add',
+      type: 'Create',
       description: `User ${user_details.name} has add payment entry of ${paymentMade} inside project ${projectDetails.site_name}.`,
       title: 'Add Payment Entry',
       project_id: payment.project_id,
@@ -155,9 +155,32 @@ const DeletePaymentEntry = async (req, res) => {
 }
 
 
+const get_payment_entries_by_id = async (req, res) => {
+  try {
+    const { id } = req.query;
+ 
+    if (!id) {
+      return ErrorHandler(res, 400, "id is required");
+    }
+ 
+    const payments = await PaymentEntry.findById(id)
+ 
+ 
+    if (!payments || payments.length === 0) {
+      return ErrorHandler(res, 404, "No payment entries found ");
+    }
+ 
+    return ResponseOk(res, 200, "Payment entries retrieved successfully", payments);
+  } catch (error) {
+    console.error("[list_of_payment_entries]", error);
+    return ErrorHandler(res, 500, "Server error while retrieving payment entries");
+  }
+};
+
 module.exports = {
   createPaymentEntry,
   list_of_payment_entries,
   updatePaymentEntry,
-  DeletePaymentEntry
+  DeletePaymentEntry,
+  get_payment_entries_by_id
 };

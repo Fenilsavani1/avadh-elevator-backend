@@ -101,7 +101,7 @@ const CreateMechanicalQC = async (req, res) => {
       user_id: req.auth?.id || null,
       user_name: user_details.name,
       action: 'ADD_MECHANICAL_QC',
-      type: 'Add',
+      type: 'Create',
       description: `User ${user_details.name} has added mechanical qc form inside project ${projectDetails.site_name}.`,
       title: 'Add Mechanical QC',
       project_id: newMechanicalQC.project_id,

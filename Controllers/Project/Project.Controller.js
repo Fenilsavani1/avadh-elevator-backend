@@ -270,9 +270,53 @@ const ViewListOfSupervisors = async (req, res) => {
   }
 };
 
-const GetProjectShortDetails   = async (req,res) =>{
+
+
+const GetProjectShortDetails = async (req, res) => {
   try {
-      const projects = await Project.aggregate([
+    const {
+      supervisor,
+      fromDate,
+      toDate,
+      minPayment,
+      maxPayment,
+      minReceived,
+      maxReceived,
+      minRemaining,
+      maxRemaining
+    } = req.query;
+
+    const matchConditions = {};
+
+    if (supervisor) {
+      matchConditions.Site_Supervisor = supervisor;
+    }
+
+    if (fromDate || toDate) {
+      matchConditions.aggrement_date = {};
+      if (fromDate) matchConditions.aggrement_date.$gte = new Date(fromDate);
+      if (toDate) matchConditions.aggrement_date.$lte = new Date(toDate);
+    }
+
+    if (minPayment || maxPayment) {
+      matchConditions.payment_amount = {};
+      if (minPayment) matchConditions.payment_amount.$gte = Number(minPayment);
+      if (maxPayment) matchConditions.payment_amount.$lte = Number(maxPayment);
+    }
+
+    if (minReceived || maxReceived) {
+      matchConditions.amount_received = {};
+      if (minReceived) matchConditions.amount_received.$gte = Number(minReceived);
+      if (maxReceived) matchConditions.amount_received.$lte = Number(maxReceived);
+    }
+
+    if (minRemaining || maxRemaining) {
+      matchConditions.amount_remaining = {};
+      if (minRemaining) matchConditions.amount_remaining.$gte = Number(minRemaining);
+      if (maxRemaining) matchConditions.amount_remaining.$lte = Number(maxRemaining);
+    }
+
+    const pipeline = [
       {
         $lookup: {
           from: "paymententries",
@@ -283,27 +327,18 @@ const GetProjectShortDetails   = async (req,res) =>{
       },
       {
         $addFields: {
-          amount_received: {
-            $sum: "$payment_details.payment_Made"
-          }
+          amount_received: { $sum: "$payment_details.payment_Made" }
         }
       },
       {
         $addFields: {
-          amount_remaining: {
-            $subtract: ["$payment_amount", "$amount_received"]
-          },
+          amount_remaining: { $subtract: ["$payment_amount", "$amount_received"] },
           payment_progress: {
             $cond: [
               { $gt: ["$payment_amount", 0] },
               {
                 $round: [
-                  {
-                    $multiply: [
-                      { $divide: ["$amount_received", "$payment_amount"] },
-                      100
-                    ]
-                  },
+                  { $multiply: [{ $divide: ["$amount_received", "$payment_amount"] }, 100] },
                   2
                 ]
               },
@@ -311,38 +346,44 @@ const GetProjectShortDetails   = async (req,res) =>{
             ]
           }
         }
-      },
-      {
-        $project: {
-          _id: 1,
-          site_name: 1,
-          aggrement_no: 1,
-          aggrement_date: 1,
-          site_address: 1,
-          client_name: 1,
-          client_mobile: 1,
-          client_email: 1,
-          Site_Supervisor: 1,
-          status: 1,
-          payment_amount: 1,
-          amount_received: 1,
-          amount_remaining: 1,
-          payment_progress: 1,
-        }
       }
-    ]);
+    ];
+
+    if (Object.keys(matchConditions).length > 0) {
+      pipeline.push({ $match: matchConditions });
+    }
+
+    pipeline.push({
+      $project: {
+        _id: 1,
+        site_name: 1,
+        aggrement_no: 1,
+        aggrement_date: 1,
+        site_address: 1,
+        client_name: 1,
+        client_mobile: 1,
+        client_email: 1,
+        Site_Supervisor: 1,
+        status: 1,
+        payment_amount: 1,
+        amount_received: 1,
+        amount_remaining: 1,
+        payment_progress: 1
+      }
+    });
+
+    const projects = await Project.aggregate(pipeline);
 
     if (!projects || projects.length === 0) {
       return ErrorHandler(res, 404, "No projects found");
     }
-      return ResponseOk(res, 200, "Projects retrieved successfully", projects);
+
+    return ResponseOk(res, 200, "Projects retrieved successfully", projects);
   } catch (error) {
     console.error("Error in GetProjectShortDetails:", error);
     return ErrorHandler(res, 500, "Failed to retrieve project short details", error);
-    
   }
-}
-
+};
 
 
 const GetProjectDetailsById = async (req,res) =>{
