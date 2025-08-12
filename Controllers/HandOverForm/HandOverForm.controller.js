@@ -10,6 +10,7 @@ const { Users } = require('../../Models/User.model');
 const CreateHandOverForm = async (req, res) => {
   try {
     const {
+      name,
       siteSupervisor,
       date,
       jobNumber,
@@ -70,7 +71,7 @@ const CreateHandOverForm = async (req, res) => {
       user_id: req.auth?.id || null,
       user_name: user_details.name,
       action: 'ADD_HANDOVER_FORM',
-      type: 'Add',
+      type: 'Create',
       description: `User ${user_details.name} has added handover form inside project ${projectDetails.site_name}.`,
       title: 'Add HandOver Form',
       project_id: newForm.project_id,
@@ -100,6 +101,7 @@ const UpdateHandOverForm = async (req, res) => {
     }
 
     const {
+      name,
       siteSupervisor,
       date,
       jobNumber,
@@ -114,34 +116,37 @@ const UpdateHandOverForm = async (req, res) => {
       complaint_point = [],
       complaint_remark = [],
     } = req.body;
-    const idsToDelete = Array.isArray(deletedFileId)
-      ? deletedFileId
-      : deletedFileId
-      ? [deletedFileId]
-      : [];
-      const UpdateddeletedImgIds = JSON.parse(idsToDelete);
-    if (UpdateddeletedImgIds.length > 0) {
-      for (const fileId of UpdateddeletedImgIds) {
-        const fileToRemove = existingForm.files.find(
-          (file) => file._id.toString() === fileId
-        );
+    if(deletedFileId){
 
-        if (fileToRemove) {
-          const filePath = path.join(
-            __dirname,
-            "..",
-            fileToRemove.fileUrl.replace("/public", "public")
+      const idsToDelete = Array.isArray(deletedFileId)
+        ? deletedFileId
+        : deletedFileId
+        ? [deletedFileId]
+        : [];
+        const UpdateddeletedImgIds = JSON.parse(idsToDelete);
+      if (UpdateddeletedImgIds.length > 0) {
+        for (const fileId of UpdateddeletedImgIds) {
+          const fileToRemove = existingForm.files.find(
+            (file) => file._id.toString() === fileId
           );
-
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+  
+          if (fileToRemove) {
+            const filePath = path.join(
+              __dirname,
+              "..",
+              fileToRemove.fileUrl.replace("/public", "public")
+            );
+  
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
           }
         }
+  
+        existingForm.files = existingForm.files.filter(
+          (file) => !UpdateddeletedImgIds.includes(file._id.toString())
+        );
       }
-
-      existingForm.files = existingForm.files.filter(
-        (file) => !UpdateddeletedImgIds.includes(file._id.toString())
-      );
     }
 
     const uploadedFiles = req.files || [];
@@ -155,7 +160,7 @@ const UpdateHandOverForm = async (req, res) => {
     if (newFiles.length > 0) {
       existingForm.files.push(...newFiles);
     }
-
+    if (name !== undefined) existingForm.name = name;
     if (siteSupervisor !== undefined) existingForm.siteSupervisor = siteSupervisor;
     if (date !== undefined) existingForm.date = date;
     if (jobNumber !== undefined) existingForm.jobNumber = jobNumber;

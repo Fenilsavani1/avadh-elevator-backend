@@ -6,6 +6,10 @@ const HandOverFormSchema = new mongoose.Schema({
     ref: 'project',
     required: true
   },
+  name:{
+    type: String,
+    required: true,
+  },
   siteSupervisor: {
     type: String,
     required: true,

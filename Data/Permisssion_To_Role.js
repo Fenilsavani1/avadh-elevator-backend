@@ -101,5 +101,14 @@ exports.PermissionRolesData = [
   { id: 30, role_id: 4, permission_id: 26 }, // View Pre Installation Steps
   { id: 31, role_id: 4, permission_id: 30 }, // View Vender order
   { id: 32, role_id: 4, permission_id: 34 }, // View Delivery List
-  { id: 33, role_id: 4, permission_id: 38 }  // View QC
+  { id: 33, role_id: 4, permission_id: 38 },  // View QC
+    // Site Supervisor (role_id: 4)
+  { id: 26, role_id: 5, permission_id: 2 },  // View Project
+  { id: 27, role_id: 5, permission_id: 6 },  // View Erector
+  { id: 28, role_id: 5, permission_id: 13 }, // View Dashboard
+  { id: 29, role_id: 5, permission_id: 22 }, // View Elevator
+  { id: 30, role_id: 5, permission_id: 26 }, // View Pre Installation Steps
+  { id: 31, role_id: 5, permission_id: 30 }, // View Vender order
+  { id: 32, role_id: 5, permission_id: 34 }, // View Delivery List
+  { id: 33, role_id: 5, permission_id: 38 }  // View QC
 ]
