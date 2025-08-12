@@ -135,10 +135,10 @@ const PaymentRecordSchema = new mongoose.Schema({
   },
   type_of_payment: {
     type: String,
-    enum: ['Cash', 'Bank Transfer', 'Cheque', 'UPI'],
+    enum: ['Cash', 'Bank Transfer', 'Cheque', 'UPI','RTGS','Other'],
     default: 'Cash'
   },
-  by_whom: { type: String }  // e.g. name of person who paid
+  by_whom: { type: String } 
 }, {
   timestamps: true,
   versionKey: false

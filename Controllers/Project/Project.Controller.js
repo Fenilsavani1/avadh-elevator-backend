@@ -45,14 +45,17 @@ const createProject = async (req, res) => {
       additional_notes,
       location,
     });
-    // await ActivityLog.create({
-    //   user_id: req.user?._id || null,
-    //   action: 'ADD PROJECT',
-    //   type: 'Message_Response',
-    //   sub_type: 'ADD',
-    //   message: `Project ${site_name} with ID ${projectId} was deleted.`,
-    //   title: 'Project Deleted',
-    // });
+    const user_details = await Users.findById(req.auth.id)
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'ADD_PROJECT',
+      type: 'Create',
+      description: `User with name ${user_details.name} has created project named as ${site_name}.`,
+      title: 'Project Added',
+      project_id:project._id,
+    });
+
     return ResponseOk(res, 201, "Project created successfully", project);
   } catch (error) {
     console.error("[createProject]", error);
@@ -77,6 +80,7 @@ const ViewProject = async (req, res) => {
     const matchStage = {};
 
     if (supervisor) {
+      console.log("object",supervisor)
       matchStage.Site_Supervisor = supervisor;
     }
 
@@ -228,6 +232,16 @@ const UpdateProject = async (req, res) => {
       return ErrorHandler(res, 404, "Project not found");
     }
 
+     const user_details = await Users.findById(req.auth.id)
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'UPDATE_PROJECT',
+      type: 'Update',
+      description: `User with name ${user_details.name} has updated ${req.body.site_name} project .`,
+      title: 'Project Updated',
+      project_id:projectId,
+    });
     return ResponseOk(res, 200, "Project updated successfully", updatedProject);
   } catch (error) {
     console.error("[UpdateProject]", error);
@@ -329,6 +343,8 @@ const GetProjectShortDetails   = async (req,res) =>{
   }
 }
 
+
+
 const GetProjectDetailsById = async (req,res) =>{
   try {
     const projectId = req.query.projectId
@@ -346,8 +362,6 @@ const GetProjectDetailsById = async (req,res) =>{
     return ErrorHandler(res, 500, "Failed to retrieve project details", error);
   }
 }
-
-
 
 
 const ViewProjectOverviewById = async (req, res) => {
@@ -483,7 +497,7 @@ const ViewProjectOverviewById = async (req, res) => {
   }
 };
 
-const DeleteProject = async (req, res) => {
+const DeleteProject = async (req, res) => {;
   try {
     const projectId = req.query.projectId;
     const password = req.body.password;
@@ -506,6 +520,7 @@ const DeleteProject = async (req, res) => {
         if (!match) {
           return ErrorHandler(res, 400, 'Invalid password');
         }
+        const projectDetails = await Project.findById(projectId);
         let deletedProject;
         if(match){
            deletedProject = await Project.findByIdAndDelete(projectId);
@@ -517,15 +532,16 @@ const DeleteProject = async (req, res) => {
 
     const site_name = deletedProject.site_name || 'Unknown Project';
 
-    // await ActivityLog.create({
-    //   user_id: req.user?._id || null,
-    //   action: 'DELETE_PROJECT',
-    //   type: 'Message_Response',
-    //   sub_type: 'Delete',
-    //   message: `Project ${site_name} with ID ${projectId} was deleted.`,
-    //   title: 'Project Deleted',
-    // });
-
+     const user_details = await Users.findById(req.auth.id)
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'DELETE_PROJECT',
+      type: 'Delete',
+      description: `User with name ${user_details.name} has deleted ${projectDetails.site_name} project .`,
+      title: 'Project Deleted',
+      project_id:projectId,
+    });
 
     return ResponseOk(res, 200, "Project deleted successfully", deletedProject);
   } catch (error) {
@@ -533,6 +549,9 @@ const DeleteProject = async (req, res) => {
     return ErrorHandler(res, 500, "Server error while deleting project");
   }
 };
+
+
+
 
 
 

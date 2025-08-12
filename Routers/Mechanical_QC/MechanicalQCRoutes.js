@@ -1,7 +1,7 @@
 const { Router } = require("express");
 
 const { MeachanicalQc,MeachanicalQcForm } = require('../../Models/QC.model')
-const {CreateMechanicalQC, UpdateMechanicalQC, GetMechanicalQCByID, GetMechanicalQCAll, GetMechanicalQCOveriview} = require("../../Controllers/Mechanical_QC/Mechanical.controller");
+const {CreateMechanicalQC, UpdateMechanicalQC, GetMechanicalQCByID, GetMechanicalQCAll, GetMechanicalQCOveriview, DeleteMechanicalQC} = require("../../Controllers/Mechanical_QC/Mechanical.controller");
 const upload = require('../../Utils/ImageUtils'); 
 
 
@@ -12,5 +12,6 @@ MechanicalQCRouter.post('/update_mechanical_qc', upload.any('files'), UpdateMech
 MechanicalQCRouter.get('/get_mechanical_qc_by_id', GetMechanicalQCByID);
 MechanicalQCRouter.get('/get_all_mechanical_qc', GetMechanicalQCAll);
 MechanicalQCRouter.get('/get_mechanical_qc_overview', GetMechanicalQCOveriview);
+MechanicalQCRouter.post('/delete_mechanical_qc', DeleteMechanicalQC);
 
 module.exports = MechanicalQCRouter;

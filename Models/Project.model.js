@@ -107,6 +107,10 @@ const ElevatorSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    lift_well_depth: {
+        type: Number,
+        required: true,
+    },
     car_enclouser_type: {
         type: String,
         required: true,

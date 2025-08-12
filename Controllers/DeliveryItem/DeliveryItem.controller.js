@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { DeliveryListForm,DeliveryListSubForm } = require('../../Models/DeliveryItem.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
-
+const { ActivityLog } = require('../../Models/Activitylog.model');
+const { Project } = require('../../Models/Project.model');
+const { Users } = require('../../Models/User.model');
 
 
 const CreateDeliveryForm = async (req, res) => {
@@ -64,6 +66,17 @@ const CreateDeliveryForm = async (req, res) => {
         return await newSubForm.save();
       })
     );
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: newDeliveryList.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'CREATE_DELIVERY_FORM',
+      type: 'Create',
+      description: `User ${user_details.name} has added delivery list form inside project ${projectDetails.site_name}.`,
+      title: 'Create Delivery Form',
+      project_id: newDeliveryList.project_id,
+    });
 
     return ResponseOk(res, 201, "Delivery List Form and sub-forms created successfully", {
       deliveryForm: newDeliveryList,
@@ -196,7 +209,6 @@ const UpdateDeliveryForm = async (req, res) => {
     if (!form.form_type) return null;
 
     const files = fileMap[index] || [];
-    console.log("form1111",form)
     if (form._id) {
     return await DeliveryListSubForm.findByIdAndUpdate(
   form._id,
@@ -230,6 +242,17 @@ const UpdateDeliveryForm = async (req, res) => {
   })
 );
 
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: updatedForm.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'UPDATE_DELIVERY_FORM',
+      type: 'Update',
+      description: `User ${user_details.name} has updated delivery list form inside project ${projectDetails.site_name}.`,
+      title: 'Update Delivery Form',
+      project_id: updatedForm.project_id,
+    });
     return ResponseOk(res, 200, "Delivery form updated", {
       form: updatedForm,
       subForms: savedSubForms.filter(Boolean)
@@ -251,7 +274,17 @@ const DeleteDeliveryForm = async (req, res) => {
     if (!form) return ErrorHandler(res, 404, "Form not found");
 
     await DeliveryListSubForm.deleteMany({ parent_form_id: id });
-
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: form.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'DELETE_DELIVERY_FORM',
+      type: 'Delete',
+      description: `User ${user_details.name} has deleted delivery list form inside project ${projectDetails.site_name}.`,
+      title: 'Delete Delivery Form',
+      project_id: form.project_id,
+    });
     return ResponseOk(res, 200, "Form and sub-forms deleted successfully");
   } catch (error) {
     return ErrorHandler(res, 500, "Failed to delete form", error);
