@@ -80,29 +80,9 @@ const DeliveryListSubFormSchema = new mongoose.Schema({
 
 const DeliveryListSubForm = mongoose.model('delivery_list_sub_form', DeliveryListSubFormSchema);
 
-// const DeliveryListSubFormEntrySchema = new mongoose.Schema({
-//     id: {
-//         type: mongoose.Schema.Types.ObjectId,
-//         auto: true
-//     },
-//     parent_sub_form_id: {
-//         type: mongoose.Schema.Types.ObjectId,
-//         ref: 'delivery_list_sub_form',
-//         required: true
-//     },
-//     metadata: {
-//         type: mongoose.Schema.Types.Mixed,
-//         required: true  
-//     },
-// },{
-//     timestamps: true,
-//     versionKey: false
-// })
-
-// const DeliveryListSubFormEntry = mongoose.model('delivery_list_sub_form_entry', DeliveryListSubFormEntrySchema);
+;
 
 module.exports = {
     DeliveryListForm,
     DeliveryListSubForm,
-    // DeliveryListSubFormEntry
 };

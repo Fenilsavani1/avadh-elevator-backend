@@ -272,7 +272,6 @@ const UpdateMechanicalQC = async (req, res) => {
   }
 };
 
-
 const GetMechanicalQCByID = async (req, res) => {
   try {
     const { id } = req.query;
@@ -303,7 +302,6 @@ const GetMechanicalQCByID = async (req, res) => {
   }
 }
 
-
 const GetMechanicalQCAll = async (req, res) => {
   try {
     const mechanical_qc = await MeachanicalQc.find().select("_id contract_name site_name project_id date mobile_number supervisor_name area block machine_make");
@@ -314,7 +312,6 @@ const GetMechanicalQCAll = async (req, res) => {
 
   }
 }
-
 
 const GetMechanicalQCOveriview = async (req, res) => {
   try {

@@ -1,5 +1,5 @@
-const {PaymentEntry,Project} = require('../../Models/Project.model')
-const {ErrorHandler, ResponseOk} = require("../../Utils/ResponseHandler");
+const { PaymentEntry, Project } = require('../../Models/Project.model')
+const { ErrorHandler, ResponseOk } = require("../../Utils/ResponseHandler");
 
 const GetPaymentDataReport = async (req, res) => {
   try {
@@ -70,7 +70,7 @@ const GetPaymentDataReport = async (req, res) => {
 const GetYearlyPaymentReport = async (req, res) => {
   try {
     const { year } = req.query;
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     const totalRevenue = await Project.aggregate([
       { $group: { _id: null, revenue: { $sum: "$payment_amount" } } }
@@ -107,7 +107,7 @@ const GetYearlyPaymentReport = async (req, res) => {
         due: runningDue - receivedAmount
       });
 
-      runningDue -= receivedAmount; 
+      runningDue -= receivedAmount;
     }
 
     return ResponseOk(res, 200, "Yearly payment report retrieved successfully", report);
@@ -119,4 +119,4 @@ const GetYearlyPaymentReport = async (req, res) => {
 
 
 
-module.exports = { GetPaymentDataReport,GetYearlyPaymentReport };
+module.exports = { GetPaymentDataReport, GetYearlyPaymentReport };

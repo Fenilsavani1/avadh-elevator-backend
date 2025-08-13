@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require("bcrypt");
 const { NUMBER } = require('sequelize');
-// const { all } = require('../Routers/Admin/AdminRoutes');
 
 /** User Schema */
 const UserSchema = new mongoose.Schema({
@@ -95,10 +94,6 @@ const User_Associate_With_Role = mongoose.model('User_Associate_With_Role', User
 
 /** Role_with_permission Schema */
 const RolePermissionSchema = new mongoose.Schema({
-  //  id:{
-  //   type: Number,
-  //   required: true,
-  // },
   role_id: {
     type: Number,
     required: true,
@@ -114,22 +109,6 @@ const RolePermissionSchema = new mongoose.Schema({
 const Role_with_permission = mongoose.model('Role_with_permission', RolePermissionSchema);
 
 
-const LocalizedTextSchema = new mongoose.Schema({
-  reference_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true
-  },
-  type: {
-    type: String, // e.g. 'permission' or 'role'
-    required: true
-  },
-  localized_text: {
-    type: String,
-    required: true
-  }
-});
-
-const LocalizedText = mongoose.model('LocalizedText', LocalizedTextSchema);
 
 
 
@@ -140,5 +119,4 @@ module.exports = {
   Permissions,
   User_Associate_With_Role,
   Role_with_permission,
-  LocalizedText
 };

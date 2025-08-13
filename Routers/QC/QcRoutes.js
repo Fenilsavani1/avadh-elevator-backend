@@ -1,7 +1,7 @@
 const { Router } = require("express");
 
 const { QCEntry } = require('../../Models/QC.model')
-const {CreateQCEntry, GetQCEntries, DeleteQcEntry, UpdateQCEntry, GetQCEntriesById, GetQCEntriesOverview } = require("../../Controllers/QC/Qc.Controller");
+const {CreateQCEntry, GetQCEntries, DeleteQcEntry, UpdateQCEntry, GetQCEntriesById, GetQCEntriesOverview } = require("../../Controllers/ElectricalQC/ElectricalQc.Controller");
 const upload = require('../../Utils/ImageUtils'); 
 
 

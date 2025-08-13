@@ -3,8 +3,10 @@ const router = express.Router();
 const { Elevators } = require('../../Models/Project.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
 const { ActivityLog } = require('../../Models/Activitylog.model');
-const { Project } = require('../../Models/Project.model'); 
+const { Project } = require('../../Models/Project.model');
 const { Users } = require('../../Models/User.model');
+
+
 const CreateElevator = async (req, res) => {
     try {
         const {
@@ -69,17 +71,17 @@ const CreateElevator = async (req, res) => {
         const savedElevator = await newElevator.save();
 
 
-            const user_details = await Users.findById(req.auth.id);
-            const projectDetails = await Project.findById(project_id).select('site_name');
-            await ActivityLog.create({
+        const user_details = await Users.findById(req.auth.id);
+        const projectDetails = await Project.findById(project_id).select('site_name');
+        await ActivityLog.create({
             user_id: req.auth?.id || null,
             user_name: user_details.name,
             action: 'ADD_ELEVATOR',
             type: 'Create',
             description: `User ${user_details.name} has added an elevator named "${elevator_name}" to project "${projectDetails.site_name}".`,
             title: 'Elevator Added',
-            project_id:project_id,
-            });
+            project_id: project_id,
+        });
 
         return ResponseOk(res, 201, "Elevator created successfully", savedElevator);
     } catch (error) {
@@ -104,17 +106,17 @@ const UpdateElevator = async (req, res) => {
             return ErrorHandler(res, 404, "Elevator not found");
         }
         const project_ID = updatedElevator.project_id;
-            const user_details = await Users.findById(req.auth.id);
-            const projectDetails = await Project.findOne({_id:updatedElevator.project_id}).select('site_name');
-            await ActivityLog.create({
+        const user_details = await Users.findById(req.auth.id);
+        const projectDetails = await Project.findOne({ _id: updatedElevator.project_id }).select('site_name');
+        await ActivityLog.create({
             user_id: req.auth?.id || null,
             user_name: user_details.name,
             action: 'UPDATE_ELEVATOR',
             type: 'Update',
             description: `User ${user_details.name} has updated an elevator named "${updatedElevator.elevator_name}" of project "${projectDetails.site_name}".`,
             title: 'Elevator Updated',
-            project_id:updatedElevator.project_id,
-            });
+            project_id: updatedElevator.project_id,
+        });
         return ResponseOk(res, 200, "Elevator updated successfully", updatedElevator);
     } catch (error) {
         console.error("Error updating elevator:", error);
@@ -139,39 +141,38 @@ const GetElevatorById = async (req, res) => {
 }
 
 const DeleteElevator = async (req, res) => {
-  try {
-    const elevatorId = req.query.id;
+    try {
+        const elevatorId = req.query.id;
 
-    const elevatorToDelete = await Elevators.findById(elevatorId);
+        const elevatorToDelete = await Elevators.findById(elevatorId);
 
-    if (!elevatorToDelete) {
-      return ErrorHandler(res, 404, "Elevator not found");
-    }
+        if (!elevatorToDelete) {
+            return ErrorHandler(res, 404, "Elevator not found");
+        }
 
-    const projectData = await Project.findById(elevatorToDelete.project_id).select('site_name');
-    const site_name = projectData ? projectData.site_name : 'Unknown Project';
+        const projectData = await Project.findById(elevatorToDelete.project_id).select('site_name');
+        const site_name = projectData ? projectData.site_name : 'Unknown Project';
 
-    const deletedElevator = await Elevators.findByIdAndDelete(elevatorId);
+        const deletedElevator = await Elevators.findByIdAndDelete(elevatorId);
 
-            const user_details = await Users.findById(req.auth.id);
-            const projectDetails = await Project.findOne({_id:elevatorToDelete.project_id}).select('site_name');
-            await ActivityLog.create({
+        const user_details = await Users.findById(req.auth.id);
+        const projectDetails = await Project.findOne({ _id: elevatorToDelete.project_id }).select('site_name');
+        await ActivityLog.create({
             user_id: req.auth?.id || null,
             user_name: user_details.name,
             action: 'DELETE_ELEVATOR',
             type: 'Delete',
             description: `User ${user_details.name} has deleted an elevator named "${elevatorToDelete.elevator_name}" of project "${projectDetails.site_name}".`,
             title: 'Elevator Deleted',
-            project_id:elevatorToDelete.project_id,
-            });
+            project_id: elevatorToDelete.project_id,
+        });
 
-    return ResponseOk(res, 200, "Elevator deleted successfully", deletedElevator);
-  } catch (error) {
-    console.error("Error deleting elevator:", error);
-    return ErrorHandler(res, 500, "Failed to delete elevator", error);
-  }
+        return ResponseOk(res, 200, "Elevator deleted successfully", deletedElevator);
+    } catch (error) {
+        console.error("Error deleting elevator:", error);
+        return ErrorHandler(res, 500, "Failed to delete elevator", error);
+    }
 };
-
 
 const GetElevatorByProjectId = async (req, res) => {
     try {
@@ -188,8 +189,6 @@ const GetElevatorByProjectId = async (req, res) => {
         return ErrorHandler(res, 500, "Failed to retrieve elevator", error);
     }
 }
-
-
 
 const GetElevatorAll = async (req, res) => {
     try {

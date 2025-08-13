@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { DeliveryListForm,DeliveryListSubForm } = require('../../Models/DeliveryItem.model');
+const { DeliveryListForm, DeliveryListSubForm } = require('../../Models/DeliveryItem.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
 const { ActivityLog } = require('../../Models/Activitylog.model');
 const { Project } = require('../../Models/Project.model');
@@ -89,7 +89,6 @@ const CreateDeliveryForm = async (req, res) => {
   }
 };
 
-
 const GetAllDeliveryForms = async (req, res) => {
   try {
     const forms = await DeliveryListForm.find().sort({ createdAt: -1 });
@@ -98,8 +97,6 @@ const GetAllDeliveryForms = async (req, res) => {
     return ErrorHandler(res, 500, "Failed to fetch delivery list forms", error);
   }
 };
-
-
 
 const GetDeliveryFormById = async (req, res) => {
   try {
@@ -115,7 +112,6 @@ const GetDeliveryFormById = async (req, res) => {
     return ErrorHandler(res, 500, "Failed to fetch form", error);
   }
 };
-
 
 const GetDeliveryFormsByProjectId = async (req, res) => {
   try {
@@ -138,8 +134,6 @@ const GetDeliveryFormsByProjectId = async (req, res) => {
     return ErrorHandler(res, 500, "Failed to fetch forms by project", error);
   }
 };
-
-
 
 const UpdateDeliveryForm = async (req, res) => {
   try {
@@ -174,21 +168,21 @@ const UpdateDeliveryForm = async (req, res) => {
 
     if (!updatedForm) return ErrorHandler(res, 404, "Form not found");
 
-  
+
 
     if (deletedImgIds.length > 0) {
       console.log("deletedImgIds", deletedImgIds);
 
-  console.log("Attempting to delete files with IDs:", deletedImgIds);
- let   UpdateddeletedImgIds = JSON.parse(deletedImgIds);
+      console.log("Attempting to delete files with IDs:", deletedImgIds);
+      let UpdateddeletedImgIds = JSON.parse(deletedImgIds);
 
-  const result = await DeliveryListSubForm.updateMany(
-    { parent_form_id: id },
-    { $pull: { files: { _id: { $in: UpdateddeletedImgIds } } } }
-  );
+      const result = await DeliveryListSubForm.updateMany(
+        { parent_form_id: id },
+        { $pull: { files: { _id: { $in: UpdateddeletedImgIds } } } }
+      );
 
-  console.log("Update result:", result);
-}
+      console.log("Update result:", result);
+    }
 
     const uploadedFiles = req.files || [];
     const fileMap = {};
@@ -204,43 +198,43 @@ const UpdateDeliveryForm = async (req, res) => {
       }
     });
 
-   const savedSubForms = await Promise.all(
-  sub_forms.map(async (form, index) => {
-    if (!form.form_type) return null;
+    const savedSubForms = await Promise.all(
+      sub_forms.map(async (form, index) => {
+        if (!form.form_type) return null;
 
-    const files = fileMap[index] || [];
-    if (form._id) {
-    return await DeliveryListSubForm.findByIdAndUpdate(
-  form._id,
-  {
-    $set: {
-      type: form.form_type,
-      metadata: {
-        items: form.form_items || []
-      }
-    },
-    $push: {
-      files: { $each: files }
-    }
-  },
-  { new: true }
-);
+        const files = fileMap[index] || [];
+        if (form._id) {
+          return await DeliveryListSubForm.findByIdAndUpdate(
+            form._id,
+            {
+              $set: {
+                type: form.form_type,
+                metadata: {
+                  items: form.form_items || []
+                }
+              },
+              $push: {
+                files: { $each: files }
+              }
+            },
+            { new: true }
+          );
 
-    } else {
-      console.log("here in else")
-      const newSubForm = new DeliveryListSubForm({
-        type: form.form_type,
-        parent_form_id: id,
-        metadata: {
-          items: form.form_items || []
-        },
-        files
-      });
+        } else {
+          console.log("here in else")
+          const newSubForm = new DeliveryListSubForm({
+            type: form.form_type,
+            parent_form_id: id,
+            metadata: {
+              items: form.form_items || []
+            },
+            files
+          });
 
-      return await newSubForm.save();
-    }
-  })
-);
+          return await newSubForm.save();
+        }
+      })
+    );
 
     const user_details = await Users.findById(req.auth.id);
     const projectDetails = await Project.findOne({ _id: updatedForm.project_id }).select('site_name');
@@ -263,8 +257,6 @@ const UpdateDeliveryForm = async (req, res) => {
     return ErrorHandler(res, 500, "Failed to update delivery form", error);
   }
 };
-
-
 
 const DeleteDeliveryForm = async (req, res) => {
   try {
@@ -291,9 +283,7 @@ const DeleteDeliveryForm = async (req, res) => {
   }
 };
 
-
-
-const DeliveryFormOverview = async (req,res) =>{
+const DeliveryFormOverview = async (req, res) => {
   try {
     const project_id = req.query.project_id;
     const forms = await DeliveryListForm.find({ project_id }).select('_id form_name date');
@@ -301,20 +291,17 @@ const DeliveryFormOverview = async (req,res) =>{
   } catch (error) {
     console.error("Error in DeliveryFormOverview:", error);
     return ErrorHandler(res, 500, "Failed to fetch delivery form overview", error);
-    
+
   }
 }
 
 
-
-
-
 module.exports = {
-    CreateDeliveryForm,
-    DeleteDeliveryForm,
-    UpdateDeliveryForm,
-    GetAllDeliveryForms,
-    GetDeliveryFormById,
-    GetDeliveryFormsByProjectId,
-    DeliveryFormOverview
+  CreateDeliveryForm,
+  DeleteDeliveryForm,
+  UpdateDeliveryForm,
+  GetAllDeliveryForms,
+  GetDeliveryFormById,
+  GetDeliveryFormsByProjectId,
+  DeliveryFormOverview
 }

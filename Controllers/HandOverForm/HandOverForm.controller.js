@@ -1,4 +1,4 @@
-const { HandOverForm,ComplaintForm } = require('../../Models/HandOverForm.model');
+const { HandOverForm, ComplaintForm } = require('../../Models/HandOverForm.model');
 const { Image } = require('../../Models/Images.model');
 const { ResponseOk, ErrorHandler } = require('../../Utils/ResponseHandler');
 const path = require('path');
@@ -116,33 +116,33 @@ const UpdateHandOverForm = async (req, res) => {
       complaint_point = [],
       complaint_remark = [],
     } = req.body;
-    if(deletedFileId){
+    if (deletedFileId) {
 
       const idsToDelete = Array.isArray(deletedFileId)
         ? deletedFileId
         : deletedFileId
-        ? [deletedFileId]
-        : [];
-        const UpdateddeletedImgIds = JSON.parse(idsToDelete);
+          ? [deletedFileId]
+          : [];
+      const UpdateddeletedImgIds = JSON.parse(idsToDelete);
       if (UpdateddeletedImgIds.length > 0) {
         for (const fileId of UpdateddeletedImgIds) {
           const fileToRemove = existingForm.files.find(
             (file) => file._id.toString() === fileId
           );
-  
+
           if (fileToRemove) {
             const filePath = path.join(
               __dirname,
               "..",
               fileToRemove.fileUrl.replace("/public", "public")
             );
-  
+
             if (fs.existsSync(filePath)) {
               fs.unlinkSync(filePath);
             }
           }
         }
-  
+
         existingForm.files = existingForm.files.filter(
           (file) => !UpdateddeletedImgIds.includes(file._id.toString())
         );
@@ -152,9 +152,8 @@ const UpdateHandOverForm = async (req, res) => {
     const uploadedFiles = req.files || [];
     const newFiles = uploadedFiles.map((file) => ({
       fileType: file.mimetype.startsWith("video") ? "video" : "image",
-      fileUrl: `/public/uploads/${
-        file.mimetype.startsWith("video") ? "videos" : "images"
-      }/${file.filename}`,
+      fileUrl: `/public/uploads/${file.mimetype.startsWith("video") ? "videos" : "images"
+        }/${file.filename}`,
     }));
 
     if (newFiles.length > 0) {
@@ -192,7 +191,7 @@ const UpdateHandOverForm = async (req, res) => {
     if (complaints.length > 0) {
       await ComplaintForm.insertMany(complaints);
     }
-  const user_details = await Users.findById(req.auth.id);
+    const user_details = await Users.findById(req.auth.id);
     const projectDetails = await Project.findOne({ _id: existingForm.project_id }).select('site_name');
     await ActivityLog.create({
       user_id: req.auth?.id || null,
@@ -216,7 +215,6 @@ const UpdateHandOverForm = async (req, res) => {
   }
 };
 
-
 const GetHandOverForm = async (req, res) => {
   try {
     const { project_id } = req.query;
@@ -224,7 +222,7 @@ const GetHandOverForm = async (req, res) => {
       return ErrorHandler(res, 400, "Missing required query parameter: project_id");
     }
     const handOverForms = await HandOverForm.find({ project_id }).populate('files');
-    
+
     if (!handOverForms || handOverForms.length === 0) {
       return ErrorHandler(res, 404, "No HandOver forms found for this project");
     }
@@ -280,7 +278,6 @@ const GetHandOverFormOverview = async (req, res) => {
   }
 };
 
-
 const DeleteHandOverForm = async (req, res) => {
   try {
     const { id } = req.query;
@@ -294,7 +291,7 @@ const DeleteHandOverForm = async (req, res) => {
     if (!deletedForm) {
       return ErrorHandler(res, 404, "HandOverForm not found");
     }
-  const user_details = await Users.findById(req.auth.id);
+    const user_details = await Users.findById(req.auth.id);
     const projectDetails = await Project.findOne({ _id: deletedForm.project_id }).select('site_name');
     await ActivityLog.create({
       user_id: req.auth?.id || null,
@@ -313,6 +310,7 @@ const DeleteHandOverForm = async (req, res) => {
     return ErrorHandler(res, 500, "Server error while deleting HandOver form");
   }
 }
+
 module.exports = {
   CreateHandOverForm,
   GetHandOverForm,

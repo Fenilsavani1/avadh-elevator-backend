@@ -147,8 +147,6 @@ const GetAllErectors = async (req, res) => {
   }
 };
 
-
-
 const GetErectorsById = async (req, res) => {
   try {
     const erectors = await Erector.findById(req.query.id);
@@ -204,7 +202,6 @@ const GetErectorsOverview = async (req, res) => {
   }
 };
 
-
 const DeleteErector = async (req, res) => {
   try {
     const id = req.query.id;
@@ -217,7 +214,7 @@ const DeleteErector = async (req, res) => {
     await InstallationTerms.deleteMany({ erector_id: id });
     await PaymentRecord.deleteMany({ erector_id: id });
 
-      const user_details = await Users.findById(req.auth.id);
+    const user_details = await Users.findById(req.auth.id);
     const projectDetails = await Project.findOne({ _id: deletedErector.project_id }).select('site_name');
     await ActivityLog.create({
       user_id: req.auth?.id || null,
@@ -234,9 +231,6 @@ const DeleteErector = async (req, res) => {
     return ErrorHandler(res, 500, 'Failed to delete erector', error);
   }
 };
-
-
-
 
 
 module.exports = {

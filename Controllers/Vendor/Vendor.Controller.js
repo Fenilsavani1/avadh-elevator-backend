@@ -5,7 +5,9 @@ const { Vendor } = require("../../Models/Project.model");
 const { ActivityLog } = require("../../Models/Activitylog.model");
 const { Project } = require("../../Models/Project.model");
 const { Users } = require("../../Models/User.model");
-const createMaterialSet = async (req, res) => {
+
+
+const CreateMaterialSet = async (req, res) => {
   try {
     const {
       project_id,
@@ -44,12 +46,12 @@ const createMaterialSet = async (req, res) => {
 
     return ResponseOk(res, 200, "Material Set created successfully", materialSet);
   } catch (error) {
-    console.error("[createMaterialSet]", error);
+    console.error("[CreateMaterialSet]", error);
     return ErrorHandler(res, 500, "Server error while creating Material Set");
   }
 };
 
-const updateMaterialSet = async (req, res) => {
+const UpdateMaterialSet = async (req, res) => {
   try {
     const {
       materialSetId,
@@ -97,12 +99,12 @@ const updateMaterialSet = async (req, res) => {
 
     return ResponseOk(res, 200, "Material Set updated successfully", updatedMaterialSet);
   } catch (error) {
-    console.error("[updateMaterialSet]", error);
+    console.error("[UpdateMaterialSet]", error);
     return ErrorHandler(res, 500, "Server error while updating Material Set");
   }
 };
 
-const getMaterialSets = async (req, res) => {
+const GetMaterialSets = async (req, res) => {
   try {
     const materialSets = await MaterialSet.find({ project_id: req.query.project_id });
 
@@ -114,12 +116,12 @@ const getMaterialSets = async (req, res) => {
       materialSets,
     });
   } catch (error) {
-    console.error("[getMaterialSets]", error);
+    console.error("[GetMaterialSets]", error);
     return ErrorHandler(res, 500, "Server error while retrieving material sets");
   }
 };
 
-const deleteMaterialSet = async (req, res) => {
+const DeleteMaterialSet = async (req, res) => {
   try {
     const { id } = req.query;
 
@@ -146,7 +148,7 @@ const deleteMaterialSet = async (req, res) => {
   }
 }
 
-const getMaterialSetsOverview = async (req, res) => {
+const GetMaterialSetsOverview = async (req, res) => {
   try {
     const { project_id } = req.query;
 
@@ -186,16 +188,12 @@ const getMaterialSetsOverview = async (req, res) => {
 
     return ResponseOk(res, 200, "Material Sets retrieved successfully", { materialSets: result });
   } catch (error) {
-    console.error("[getMaterialSets]", error);
+    console.error("[GetMaterialSets]", error);
     return ErrorHandler(res, 500, "Server error while retrieving material sets");
   }
 };
 
-
-
-
-
-const getMaterialSetsByid = async (req, res) => {
+const GetMaterialSetsByid = async (req, res) => {
   try {
     const { id } = req.query;
     const materialSets = await MaterialSet.findById(id)
@@ -210,14 +208,12 @@ const getMaterialSetsByid = async (req, res) => {
       materialSets,
     });
   } catch (error) {
-    console.error("[getMaterialSets]", error);
+    console.error("[GetMaterialSets]", error);
     return ErrorHandler(res, 500, "Server error while retrieving material sets");
   }
 };
 
-
-
-const addVendor = async (req, res) => {
+const AddVendor = async (req, res) => {
   try {
     const { name, company_name, mobile_number } = req.body;
 
@@ -303,7 +299,6 @@ const GetVendor = async (req, res) => {
   }
 };
 
-
 const DeleteVendor = async (req, res) => {
   try {
     const { id } = req.query;
@@ -345,13 +340,13 @@ const GetVendorById = async (req, res) => {
   }
 };
 module.exports = {
-  createMaterialSet,
-  updateMaterialSet,
-  deleteMaterialSet,
-  getMaterialSets,
-  getMaterialSetsByid,
-  getMaterialSetsOverview,
-  addVendor,
+  CreateMaterialSet,
+  UpdateMaterialSet,
+  DeleteMaterialSet,
+  GetMaterialSets,
+  GetMaterialSetsByid,
+  GetMaterialSetsOverview,
+  AddVendor,
   GetVendor,
   UpdateVendor,
   DeleteVendor,

@@ -62,8 +62,6 @@ const CreatePreInstallation = async (req, res) => {
   }
 };
 
-
-
 const GetAllPreInstallations = async (req, res) => {
   try {
     const allEntries = await PreInstallation.find({ project_id: req.query.project_id });
@@ -169,17 +167,17 @@ const UpdatePreInstallation = async (req, res) => {
 
     await existingEntry.save();
     const findPreInstallation = await PreInstallation.findById(id);
-      const user_details = await Users.findById(req.auth.id);
-            const projectDetails = await Project.findOne({_id:findPreInstallation.project_id}).select('site_name');
-            await ActivityLog.create({
-            user_id: req.auth?.id || null,
-            user_name: user_details.name,
-            action: 'UPDATE_PRE_INSTALLATION',
-            type: 'Update',
-            description: `User ${user_details.name} has updated pre installation steps named ${name} for project "${projectDetails.site_name}".`,
-            title: 'Update Pre Installation',
-            project_id:project_id,
-            });
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: findPreInstallation.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'UPDATE_PRE_INSTALLATION',
+      type: 'Update',
+      description: `User ${user_details.name} has updated pre installation steps named ${name} for project "${projectDetails.site_name}".`,
+      title: 'Update Pre Installation',
+      project_id: project_id,
+    });
 
     return ResponseOk(res, 200, "Entry updated successfully", existingEntry);
   } catch (error) {
@@ -193,7 +191,6 @@ const UpdatePreInstallation = async (req, res) => {
   }
 };
 
-
 const DeletePreInstallation = async (req, res) => {
   try {
     const { id } = req.query;
@@ -203,24 +200,23 @@ const DeletePreInstallation = async (req, res) => {
     if (!entry) return ErrorHandler(res, 404, "Entry not found");
 
     await entry.deleteOne();
-      const user_details = await Users.findById(req.auth.id);
-            const projectDetails = await Project.findOne({_id:findPreInstallation.project_id}).select('site_name');
-            await ActivityLog.create({
-            user_id: req.auth?.id || null,
-            user_name: user_details.name,
-            action: 'DATE_PRE_INSTALLATION',
-            type: 'Delete',
-            description: `User ${user_details.name} has delete pre installation steps named ${findPreInstallation.name} for project "${projectDetails.site_name}".`,
-            title: 'Update Pre Installation',
-            project_id:findPreInstallation.project_id,
-            });
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findOne({ _id: findPreInstallation.project_id }).select('site_name');
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'DATE_PRE_INSTALLATION',
+      type: 'Delete',
+      description: `User ${user_details.name} has delete pre installation steps named ${findPreInstallation.name} for project "${projectDetails.site_name}".`,
+      title: 'Update Pre Installation',
+      project_id: findPreInstallation.project_id,
+    });
     return ResponseOk(res, 200, "Entry deleted successfully");
   } catch (error) {
     console.log("object", error);
     return ErrorHandler(res, 500, "Failed to delete entry", error.message || error);
   }
 };
-
 
 const GetAllPreInstallationsOverview = async (req, res) => {
   try {

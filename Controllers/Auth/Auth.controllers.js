@@ -2,7 +2,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { ErrorHandler, ResponseOk } = require('../../Utils/ResponseHandler');
-const { Op } = require('sequelize');
 const { sendToken } = require('../../Utils/TokenUtils');
 const { Users, User_Associate_With_Role } = require('../../Models/User.model')
 const { ActivityLog } = require('../../Models/Activitylog.model');
@@ -10,7 +9,7 @@ require('dotenv').config();
 
 
 
-const registerUser = async (req, res) => {
+const RegisterUser = async (req, res) => {
   try {
     const { name, email, contact_number, password } = req.body;
 
@@ -54,8 +53,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-
-const loginUser = async (req, res) => {
+const LoginUser = async (req, res) => {
   const { email, password } = req.body;
 
   if (!password || (!email)) {
@@ -109,13 +107,12 @@ const loginUser = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[loginUser]', err);
+    console.error('[LoginUser]', err);
     return ErrorHandler(res, 500, 'Server error');
   }
 };
 
-
-const getProfile = async (req, res) => {
+const GetProfile = async (req, res) => {
   try {
     const user_id = req.auth.id;
     if (!user_id) {
@@ -193,9 +190,76 @@ const getProfile = async (req, res) => {
 };
 
 
+const UpdateProfile = async (req, res) => {
+  try {
+    const { email, role_id, contact_number, name, password, oldPassword } = req.body;
+    const userRoleId = req.query.id;
+
+    const existingUserRole = await User_Associate_With_Role.findOne({ user_id: userRoleId });
+    if (!existingUserRole) {
+      return ErrorHandler(res, 404, "User association not found");
+    }
+    const userId = existingUserRole.user_id;
+
+    const updateData = {};
+
+    if (email) {
+      const emailConflict = await Users.findOne({
+        _id: { $ne: userId },
+        email: email,
+        is_deleted: false,
+      });
+      if (emailConflict) {
+        return ErrorHandler(res, 400, "Another user with this email already exists");
+      }
+      updateData.email = email;
+    }
+
+    if (contact_number) {
+      updateData.contact_number = contact_number;
+    }
+
+    if (name) {
+      updateData.name = name;
+    }
+
+    if (password) {
+      if (!oldPassword) {
+        return ErrorHandler(res, 400, "Old password is required to set a new password");
+      }
+
+      const userPass = await Users.findById(req.auth.id);
+      if (!userPass) {
+        return ErrorHandler(res, 404, "User not found");
+      }
+
+      const match = await bcrypt.compare(oldPassword, userPass.password);
+      if (!match) {
+        return ErrorHandler(res, 400, "Invalid credentials");
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      updateData.password = hashedPassword;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return ErrorHandler(res, 400, "No valid fields provided for update");
+    }
+
+    await Users.findByIdAndUpdate(userId, updateData, { new: true });
+
+    return ResponseOk(res, 200, "User updated successfully");
+  } catch (error) {
+    console.error("UpdateAdminUser Error:", error);
+    return ErrorHandler(res, 400, error.message || "Something went wrong");
+  }
+};
+
 
 module.exports = {
-  registerUser,
-  loginUser,
-  getProfile
+  RegisterUser,
+  LoginUser,
+  GetProfile,
+  UpdateProfile
 }
