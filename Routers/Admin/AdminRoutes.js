@@ -1,6 +1,6 @@
 const { Router } = require("express");
 
-const { GetPermissionAdmin, LoginAdmin, GetListOfRole, getRolePermissions, AddAdminUser, UpdateAdminUser, DeleteAdminUser, AddRolesByAdmin, UpdateRole, DeleteRole, UpdatePermissionAdmin, UpdateProjectStatus, ViewProjectById, GetUserById, ManageRolePermissions, GetStaticData, GetUserAll, DashboardKPI, GetProjectListDashboard } = require("../../Controllers/Admin/Admin.Controller");
+const { GetPermissionAdmin, LoginAdmin, GetListOfRole, GetRolePermissions, AddAdminUser, UpdateAdminUser, DeleteAdminUser, AddRolesByAdmin, UpdateRole, DeleteRole, UpdatePermissionAdmin, UpdateProjectStatus, ViewProjectById, GetUserById, ManageRolePermissions, GetStaticData, GetUserAll, DashboardKPI, GetProjectListDashboard } = require("../../Controllers/Admin/Admin.Controller");
 
 
 const AdminRouter = Router();
@@ -8,7 +8,7 @@ const AdminRouter = Router();
 AdminRouter.post("/login_admin", LoginAdmin);
 AdminRouter.get('/get_permission_list', GetPermissionAdmin);
 AdminRouter.get('/get_roles_list', GetListOfRole)
-AdminRouter.get('/list_of_permission_to_role', getRolePermissions)
+AdminRouter.get('/list_of_permission_to_role', GetRolePermissions)
 AdminRouter.post('/add_user_admin', AddAdminUser)
 AdminRouter.put('/update_user_admin', UpdateAdminUser)
 AdminRouter.post('/delete_user_admin', DeleteAdminUser)

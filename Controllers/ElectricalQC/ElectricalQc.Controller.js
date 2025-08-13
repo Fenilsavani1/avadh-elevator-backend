@@ -1,11 +1,9 @@
 const { QCEntry } = require("../../Models/QC.model");
-const { Image } = require("../../Models/Images.model");
 const { ResponseOk, ErrorHandler } = require("../../Utils/ResponseHandler");
-const { json } = require("sequelize");
 const path = require("path");
 const fs = require("fs");
 const { ActivityLog } = require("../../Models/Activitylog.model");
-const { Project } = require("../../Models/Project.model");  
+const { Project } = require("../../Models/Project.model");
 const { Users } = require("../../Models/User.model");
 
 const CreateQCEntry = async (req, res) => {
@@ -30,10 +28,10 @@ const CreateQCEntry = async (req, res) => {
 
     const uploadedFiles = req.files || [];
 
-      const files = uploadedFiles.map(file => ({
-        fileType: file.mimetype.startsWith('video') ? 'video' : 'image',
-        fileUrl: `public/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`
-      }));
+    const files = uploadedFiles.map(file => ({
+      fileType: file.mimetype.startsWith('video') ? 'video' : 'image',
+      fileUrl: `public/uploads/${file.mimetype.startsWith('video') ? 'videos' : 'images'}/${file.filename}`
+    }));
 
 
     const newQCEntry = await QCEntry.create({
@@ -113,15 +111,15 @@ const UpdateQCEntry = async (req, res) => {
     if (inspection_data !== undefined) {
       const cleanedInspectionData = Array.isArray(inspection_data)
         ? inspection_data.map(section => ({
-            ...section,
-            data: Array.isArray(section.data)
-              ? section.data.map(item => ({
-                  point: item.point?.trim(),
-                  action: item.action?.trim() || "N/A",
-                  details: item.details?.trim() || "N/A"
-                }))
-              : []
-          }))
+          ...section,
+          data: Array.isArray(section.data)
+            ? section.data.map(item => ({
+              point: item.point?.trim(),
+              action: item.action?.trim() || "N/A",
+              details: item.details?.trim() || "N/A"
+            }))
+            : []
+        }))
         : [];
       updateFields.inspection_data = cleanedInspectionData;
     }
@@ -140,7 +138,7 @@ const UpdateQCEntry = async (req, res) => {
 
 
     let updatedFiles = currentEntry.files || [];
-let UpdateddeletedImgIds = JSON.parse(deletedImg || "[]");
+    let UpdateddeletedImgIds = JSON.parse(deletedImg || "[]");
 
     if (UpdateddeletedImgIds.length > 0) {
       const deletedSet = new Set(UpdateddeletedImgIds);
@@ -159,11 +157,11 @@ let UpdateddeletedImgIds = JSON.parse(deletedImg || "[]");
       updatedFiles = updatedFiles.filter(file => !deletedSet.has(file._id?.toString()));
     }
 
-if (newFiles.length > 0) {
-  updatedFiles.push(...newFiles);
-}
+    if (newFiles.length > 0) {
+      updatedFiles.push(...newFiles);
+    }
 
-updateFields.files = updatedFiles;
+    updateFields.files = updatedFiles;
 
 
     const updatedQCEntry = await QCEntry.findByIdAndUpdate(
@@ -194,12 +192,10 @@ updateFields.files = updatedFiles;
   }
 };
 
-
-
 const GetQCEntries = async (req, res) => {
   try {
-   
-    const entries = await QCEntry.find({project_id: req.query.project_id})
+
+    const entries = await QCEntry.find({ project_id: req.query.project_id })
 
 
     return ResponseOk(res, 200, 'QC Entries with images retrieved successfully', entries);
@@ -212,9 +208,9 @@ const GetQCEntries = async (req, res) => {
 
 const GetQCEntriesById = async (req, res) => {
   try {
-   const { id } = req.query;
+    const { id } = req.query;
     const entries = await QCEntry.findById(id)
-    if(!entries) {
+    if (!entries) {
       return ErrorHandler(res, 404, "QC Entry not found");
     }
 
@@ -239,7 +235,7 @@ const DeleteQcEntry = async (req, res) => {
       return ErrorHandler(res, 404, "QC Entry not found");
     }
 
-  const user_details = await Users.findById(req.auth.id);
+    const user_details = await Users.findById(req.auth.id);
     const projectDetails = await Project.findOne({ _id: deletedEntry.project_id }).select('site_name');
     await ActivityLog.create({
       user_id: req.auth?.id || null,
@@ -257,17 +253,17 @@ const DeleteQcEntry = async (req, res) => {
   }
 };
 
-const GetQCEntriesOverview = async (req,res) =>{
+const GetQCEntriesOverview = async (req, res) => {
   try {
-    
-    const entries = await QCEntry.find({project_id: req.query.project_id})
+
+    const entries = await QCEntry.find({ project_id: req.query.project_id })
       .select('_id qc_name date siteName  sideSupervisor wiremanName wingOrLiftNo notes')
-      .sort({ date: -1 });  
+      .sort({ date: -1 });
     return ResponseOk(res, 200, "QC Entries overview retrieved successfully", entries);
   } catch (error) {
     console.error("Error retrieving QC Entries overview:", error);
-    return ErrorHandler(res, 500, "Failed to retrieve QC Entries overview",error);
-    
+    return ErrorHandler(res, 500, "Failed to retrieve QC Entries overview", error);
+
   }
 }
 

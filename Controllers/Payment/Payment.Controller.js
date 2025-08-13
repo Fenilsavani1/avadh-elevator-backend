@@ -4,7 +4,7 @@ const { ActivityLog } = require('../../Models/Activitylog.model');
 const { Project } = require('../../Models/Project.model');
 const { Users } = require('../../Models/User.model');
 
-const createPaymentEntry = async (req, res) => {
+const CreatePaymentEntry = async (req, res) => {
   try {
     const {
       paymentStatus,
@@ -43,12 +43,12 @@ const createPaymentEntry = async (req, res) => {
 
     return ResponseOk(res, 201, "Payment entry created", payment);
   } catch (error) {
-    console.error("[createPaymentEntry]", error);
+    console.error("[CreatePaymentEntry]", error);
     return ErrorHandler(res, 500, "Server error while creating payment entry");
   }
 };
 
-const list_of_payment_entries = async (req, res) => {
+const ListPaymentEntries = async (req, res) => {
   try {
     const { project_id } = req.query;
 
@@ -65,13 +65,13 @@ const list_of_payment_entries = async (req, res) => {
 
     return ResponseOk(res, 200, "Payment entries retrieved successfully", payments);
   } catch (error) {
-    console.error("[list_of_payment_entries]", error);
+    console.error("[ListPaymentEntries]", error);
     return ErrorHandler(res, 500, "Server error while retrieving payment entries");
   }
 };
 
 
-const updatePaymentEntry = async (req, res) => {
+const UpdatePaymentEntry = async (req, res) => {
   try {
     const { id } = req.query;
     const {
@@ -101,8 +101,8 @@ const updatePaymentEntry = async (req, res) => {
 
     await payment.save();
 
-    
-     const user_details = await Users.findById(req.auth.id);
+
+    const user_details = await Users.findById(req.auth.id);
     const projectDetails = await Project.findById({ _id: payment.project_id }).select('site_name');
     await ActivityLog.create({
       user_id: req.auth?.id || null,
@@ -117,7 +117,7 @@ const updatePaymentEntry = async (req, res) => {
 
     return ResponseOk(res, 200, "Payment entry updated", payment);
   } catch (error) {
-    console.error("[updatePaymentEntry]", error);
+    console.error("[UpdatePaymentEntry]", error);
     return ErrorHandler(res, 500, "Server error while updating payment entry");
   }
 };
@@ -125,7 +125,7 @@ const updatePaymentEntry = async (req, res) => {
 const DeletePaymentEntry = async (req, res) => {
 
   try {
-    
+
     const { id } = req.query;
 
     if (!id) {
@@ -154,33 +154,32 @@ const DeletePaymentEntry = async (req, res) => {
   }
 }
 
-
-const get_payment_entries_by_id = async (req, res) => {
+const GetPaymentEntryById = async (req, res) => {
   try {
     const { id } = req.query;
- 
+
     if (!id) {
       return ErrorHandler(res, 400, "id is required");
     }
- 
+
     const payments = await PaymentEntry.findById(id)
- 
- 
+
+
     if (!payments || payments.length === 0) {
       return ErrorHandler(res, 404, "No payment entries found ");
     }
- 
+
     return ResponseOk(res, 200, "Payment entries retrieved successfully", payments);
   } catch (error) {
-    console.error("[list_of_payment_entries]", error);
+    console.error("[ListPaymentEntries]", error);
     return ErrorHandler(res, 500, "Server error while retrieving payment entries");
   }
 };
 
 module.exports = {
-  createPaymentEntry,
-  list_of_payment_entries,
-  updatePaymentEntry,
+  CreatePaymentEntry,
+  ListPaymentEntries,
+  UpdatePaymentEntry,
   DeletePaymentEntry,
-  get_payment_entries_by_id
+  GetPaymentEntryById
 };

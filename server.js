@@ -14,24 +14,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Ensure uploads/ folder exists
-// const uploadPath = path.join(__dirname, '/public/uploads');
+
 const uploadPath = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
   console.log('public/uploads/ folder created automatically');
 }
 
-//uploaded files
 app.use('/public/uploads', express.static(uploadPath));
 app.use(authJwt());
 
-// API routes
 app.use('/api/v1', Routes);
 
 const PORT = process.env.PORT || 3000;
 
-// Connect to DB and start server
 const startServer = async () => {
   try {
     await connectDB();

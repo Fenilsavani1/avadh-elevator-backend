@@ -1,12 +1,12 @@
 const { Router } = require("express");
 
 const { Project } = require('../../Models/Project.model')
-const { createProject, ViewProject, UpdateProject, ViewListOfSupervisors, GetProjectShortDetails, GetProjectDetailsById, ViewProjectOverviewById, DeleteProject } = require("../../Controllers/Project/Project.Controller");
+const { CreateProject, ViewProject, UpdateProject, ViewListOfSupervisors, GetProjectShortDetails, GetProjectDetailsById, ViewProjectOverviewById, DeleteProject } = require("../../Controllers/Project/Project.Controller");
 
 
 const ProjectRouter = Router();
 
-ProjectRouter.post('/add_project', createProject);
+ProjectRouter.post('/add_project', CreateProject);
 ProjectRouter.get('/view_project', ViewProject);
 ProjectRouter.put('/update_project', UpdateProject);
 ProjectRouter.get('/get_supervisor_list', ViewListOfSupervisors);

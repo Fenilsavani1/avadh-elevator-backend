@@ -20,7 +20,6 @@ const StaticDataSchema = new mongoose.Schema({
 
 const Static_Data_Schema = mongoose.model('Static_data_schema', StaticDataSchema);
 
-/** Export all models */
 module.exports = {
   Static_Data_Schema
 };

@@ -74,51 +74,7 @@ const QCEntrySchema = new mongoose.Schema({
 
 const QCEntry = mongoose.model("qcentrys", QCEntrySchema);
 
-// const Notes_Signatures = new mongoose.Schema({
-//   note: {
-//     type: String,
-//   },
-//   wiremanSign: {
-//     type: String,
-//   },
-//   electricianSign: {
-//     type: String,
-//   },
-//   siteSupervisorSign: {
-//     type: String,
-//   },
-//   ownerSign: {
-//     type: String,
-//   },
-//   maintenanceManagerSign: {
-//     type: String,
-//   },
-// }, {
-//   timestamps: true,
-// });
 
-// const NotesAndSignatures = mongoose.model("notes_signatures", Notes_Signatures);
-
-// const ElectricalQcChecklistSchema = new mongoose.Schema({
-//   id : {
-//     type: mongoose.Schema.Types.ObjectId,
-//     auto: true
-//   },
-//   parent_form_id: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: 'qcentrys',
-//     required: true
-//   },
-//   inspection_data: {
-//     type: mongoose.Schema.Types.Mixed,
-//     required: true
-//   },
-// },{
-//   timestamps: true,
-//   versionKey: false
-// })
-
-// const ElectricalQcChecklist = mongoose.model('electrical_qc_checklist', ElectricalQcChecklistSchema);
 
 const MeachanicalQcSchema = new mongoose.mongoose.Schema({
   id : {
@@ -208,10 +164,7 @@ const MeachanicalQcFormSchema = new mongoose.Schema({
     ref: 'meachanical_qc',
     required: true
   },
-  // qc_checklist_no: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   required: true
-  // },
+
   form_no: {
     type: String,
     required: true

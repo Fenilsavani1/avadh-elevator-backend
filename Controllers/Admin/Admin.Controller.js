@@ -35,7 +35,6 @@ const LoginAdmin = async (req, res) => {
       ]
     });
 
-    console.log("user", user);
     if (!user) {
       return ErrorHandler(res, 404, 'User not found');
     }
@@ -107,7 +106,7 @@ const GetListOfRole = async (req, res) => {
   }
 };
 
-const getRolePermissions = async (req, res) => {
+const GetRolePermissions = async (req, res) => {
   try {
     const roleId = parseInt(req.query.role_id);
 
@@ -174,18 +173,18 @@ const GetUserById = async (req, res) => {
 
 const GetUserAll = async (req, res) => {
   try {
-   
+
     const user = await Users.find().select('id name email contact_number');
     if (!user) {
       return ErrorHandler(res, 404, "User not found");
     }
-    return ResponseOk(res, 200, "User retrieved successfully",user);
+    return ResponseOk(res, 200, "User retrieved successfully", user);
   } catch (error) {
     console.error("GetUserById Error:", error);
     return ErrorHandler(res, 500, "Server error while retrieving user");
   }
 };
- 
+
 const AddAdminUser = async (req, res) => {
   try {
     const { email, role_id, password, contact_number, name } = req.body;
@@ -207,7 +206,7 @@ const AddAdminUser = async (req, res) => {
 
     const newUser = await Users.create({
       email: email,
-      password: password, 
+      password: password,
       contact_number: contact_number,
       name: name,
     });
@@ -225,7 +224,7 @@ const AddAdminUser = async (req, res) => {
       type: 'Create',
       description: `User with name ${name} was added with role ID ${role_id}.`,
       title: 'User Added',
-      project_id:null,
+      project_id: null,
     });
 
 
@@ -238,17 +237,16 @@ const AddAdminUser = async (req, res) => {
   }
 };
 
-
 const UpdateAdminUser = async (req, res) => {
   try {
-    const { email, role_id, contact_number, name,password } = req.body;
-    const userRoleId = req.query.id; 
+    const { email, role_id, contact_number, name, password } = req.body;
+    const userRoleId = req.query.id;
 
     if (!email || !role_id || !contact_number || !name) {
       return ErrorHandler(res, 400, "All fields (name, email, contact_number, role_id) are required");
     }
 
-    const existingUserRole = await User_Associate_With_Role.findOne({user_id: userRoleId});
+    const existingUserRole = await User_Associate_With_Role.findOne({ user_id: userRoleId });
 
     if (!existingUserRole) {
       return ErrorHandler(res, 404, "User association not found");
@@ -271,9 +269,9 @@ const UpdateAdminUser = async (req, res) => {
       contact_number,
       name,
     });
-      const user = await Users.findById(userId);
-      user.password = password;
-      await user.save();
+    const user = await Users.findById(userId);
+    user.password = password;
+    await user.save();
     await User_Associate_With_Role.findByIdAndUpdate(userRoleId, {
       role_id: parseInt(role_id),
     });
@@ -286,7 +284,7 @@ const UpdateAdminUser = async (req, res) => {
       type: 'Update',
       description: `User with profile name as ${name}has been updated.`,
       title: 'User Updated',
-      project_id:null,
+      project_id: null,
     });
 
 
@@ -305,7 +303,7 @@ const DeleteAdminUser = async (req, res) => {
       return ErrorHandler(res, 400, "User role association ID is required");
     }
 
-    const existingUserRole = await User_Associate_With_Role.findOne({user_id: userRoleId});
+    const existingUserRole = await User_Associate_With_Role.findOne({ user_id: userRoleId });
 
     if (!existingUserRole) {
       return ErrorHandler(res, 404, "User role association not found");
@@ -321,7 +319,7 @@ const DeleteAdminUser = async (req, res) => {
       user_id: req.auth?.id || null,
       user_name: user_details.name,
       action: 'DELETE_ADMIN_USER',
-      type:  'Delete',
+      type: 'Delete',
       description: `User with profile name as ${user_details.name} was permanently deleted.`,
       title: 'User Deleted',
       project_id: null,
@@ -489,7 +487,7 @@ const UpdateProjectStatus = async (req, res) => {
       return ErrorHandler(res, 400, "Project ID and status are required");
     }
 
-    const validStatuses = [1, 2, 3]; 
+    const validStatuses = [1, 2, 3];
     if (!validStatuses.includes(status)) {
       return ErrorHandler(res, 400, "Invalid status value");
     }
@@ -634,9 +632,9 @@ const GetStaticData = async (req, res) => {
   }
 };
 
-const DashboardKPI = async (req,res) =>{
+const DashboardKPI = async (req, res) => {
   try {
-    
+
     const ProjectCount = await Project.countDocuments();
     const TotalElevators = await Elevators.countDocuments();
 
@@ -646,14 +644,13 @@ const DashboardKPI = async (req,res) =>{
     });
   } catch (error) {
     console.error("Error in DashboardKPI:", error);
-    return ErrorHandler(res, 500, "Failed to fetch dashboard KPIs");  
+    return ErrorHandler(res, 500, "Failed to fetch dashboard KPIs");
   }
 }
 
-
-const GetProjectListDashboard   = async (req,res) =>{
+const GetProjectListDashboard = async (req, res) => {
   try {
-      const projects = await Project.aggregate([
+    const projects = await Project.aggregate([
       {
         $lookup: {
           from: "paymententries",
@@ -708,11 +705,11 @@ const GetProjectListDashboard   = async (req,res) =>{
     if (!projects || projects.length === 0) {
       return ErrorHandler(res, 404, "No projects found");
     }
-      return ResponseOk(res, 200, "Projects retrieved successfully", projects);
+    return ResponseOk(res, 200, "Projects retrieved successfully", projects);
   } catch (error) {
     console.error("Error in GetProjectShortDetails:", error);
     return ErrorHandler(res, 500, "Failed to retrieve project short details", error);
-    
+
   }
 }
 
@@ -720,7 +717,7 @@ module.exports = {
   LoginAdmin,
   GetPermissionAdmin,
   GetListOfRole,
-  getRolePermissions,
+  GetRolePermissions,
   GetUserById,
   AddAdminUser,
   UpdateAdminUser,

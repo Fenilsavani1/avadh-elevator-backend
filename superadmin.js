@@ -10,11 +10,11 @@ const { Status_types_Data } = require('./Data/StatusData');
 
 exports.MakeData = async () => {
   try {
-    // Roles
+    //Roles
     await Promise.all(
       RolesData.map(async (role) => {
         await Roles.findOneAndUpdate(
-          { name: role.name }, // Using name as the unique identifier
+          { name: role.name },
           { $set: { id: role.id , name: role.name } },
           { upsert: true, new: true }
         );
@@ -43,8 +43,8 @@ exports.MakeData = async () => {
         );
       })
     );
-    console.log('StaticData count:', StaticData.length);
 
+    //Permission to Role
     await Promise.all(
   PermissionRolesData.map(async (data) => {
     await Role_with_permission.findOneAndUpdate(
@@ -69,6 +69,7 @@ exports.MakeData = async () => {
 
     console.log('RolePermission count:', PermissionRolesData.length);
 
+    //Status Types
     await Promise.all(
       Status_types_Data.map(async (status) => {
         await Status_Type.findOneAndUpdate(
@@ -80,7 +81,7 @@ exports.MakeData = async () => {
     );
 
 
-      
+  // Create a superadmin user with role
 async function createUserWithRole(email, password,full_name,contact_number) {
   try {
     const existingUser = await Users.findOne({

@@ -86,10 +86,6 @@ const ComplaintFormSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  // action : {
-  //   type: String,
-  //   trim: true,
-  // },
 },{
   timestamps: true,
   versionKey: false
