@@ -213,6 +213,45 @@ const GetMaterialSetsByid = async (req, res) => {
   }
 };
 
+
+const CopyMaterialSet = async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    const existingMaterialSet = await MaterialSet.findById(id);
+    if (!existingMaterialSet) {
+      return ErrorHandler(res, 404, "Material Set not found");
+    }
+
+    const materialSetData = existingMaterialSet.toObject();
+    delete materialSetData._id;
+    delete materialSetData.createdAt;
+    delete materialSetData.updatedAt;
+
+    const newMaterialSet = await MaterialSet.create(materialSetData);
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findById(newMaterialSet.project_id).select('site_name');
+
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'COPY_MATERIAL_SET',
+      type: 'Create',
+      description: `User ${user_details.name} copied material set "${existingMaterialSet.materialSetTitle}" to a new set "${newMaterialSet.materialSetTitle}" in project "${projectDetails.site_name}".`,
+      title: 'Material Set Copied',
+      project_id: newMaterialSet.project_id,
+    });
+
+    return ResponseOk(res, 201, "Material Set copied successfully", newMaterialSet);
+
+  } catch (error) {
+    console.error("[CopyMaterialSet]", error);
+    return ErrorHandler(res, 500, "Failed to copy Material Set");
+  }
+};
+
+
 const AddVendor = async (req, res) => {
   try {
     const { name, company_name, mobile_number } = req.body;
@@ -350,5 +389,6 @@ module.exports = {
   GetVendor,
   UpdateVendor,
   DeleteVendor,
-  GetVendorById
+  GetVendorById,
+  CopyMaterialSet
 }

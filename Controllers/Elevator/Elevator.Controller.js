@@ -204,12 +204,54 @@ const GetElevatorAll = async (req, res) => {
     }
 }
 
+
+const CopyElevator = async (req, res) => {
+    try {
+        const { id } = req.query; 
+
+        const existingElevator = await Elevators.findById(id);
+        if (!existingElevator) {
+            return ErrorHandler(res, 404, "Elevator not found");
+        }
+
+        const elevatorData = existingElevator.toObject();
+        delete elevatorData._id;
+        delete elevatorData.createdAt;
+        delete elevatorData.updatedAt;
+
+        const newElevator = new Elevators(elevatorData);
+        const savedElevator = await newElevator.save();
+
+        const user_details = await Users.findById(req.auth.id);
+        const projectDetails = await Project.findById(savedElevator.project_id).select('site_name');
+
+        await ActivityLog.create({
+            user_id: req.auth?.id || null,
+            user_name: user_details.name,
+            action: 'COPY_ELEVATOR',
+            type: 'Create',
+            description: `User ${user_details.name} copied elevator "${existingElevator.elevator_name}" to a new elevator "${savedElevator.elevator_name}" in project "${projectDetails.site_name}".`,
+            title: 'Elevator Copied',
+            project_id: savedElevator.project_id,
+        });
+
+        return ResponseOk(res, 201, "Elevator copied successfully", savedElevator);
+
+    } catch (error) {
+        console.error("Error copying elevator:", error);
+        return ErrorHandler(res, 500, "Failed to copy elevator", error);
+    }
+};
+
+
+
 module.exports = {
     CreateElevator,
     UpdateElevator,
     GetElevatorById,
     DeleteElevator,
     GetElevatorByProjectId,
-    GetElevatorAll
+    GetElevatorAll,
+    CopyElevator
 };
 

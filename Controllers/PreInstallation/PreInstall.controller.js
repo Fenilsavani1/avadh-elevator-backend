@@ -249,11 +249,50 @@ const GetAllPreInstallationsOverview = async (req, res) => {
 };
 
 
+const CopyPreInstallation = async (req, res) => {
+  try {
+    const { id } = req.query; 
+
+    const existingEntry = await PreInstallation.findById(id);
+    if (!existingEntry) {
+      return ErrorHandler(res, 404, "Pre Installation entry not found");
+    }
+
+    const entryData = existingEntry.toObject();
+    delete entryData._id;
+    delete entryData.createdAt;
+    delete entryData.updatedAt;
+
+    const newEntry = await PreInstallation.create(entryData);
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findById(newEntry.project_id).select('site_name');
+
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'COPY_PRE_INSTALLATION',
+      type: 'Create',
+      description: `User ${user_details.name} copied pre-installation "${existingEntry.name}" to a new entry "${newEntry.name}" in project "${projectDetails.site_name}".`,
+      title: 'Pre Installation Copied',
+      project_id: newEntry.project_id,
+    });
+
+    return ResponseOk(res, 201, "Pre Installation copied successfully", newEntry);
+
+  } catch (error) {
+    console.error("Error copying Pre Installation:", error);
+    return ErrorHandler(res, 500, "Failed to copy Pre Installation", error.message || error);
+  }
+};
+
+
 module.exports = {
   CreatePreInstallation,
   GetAllPreInstallations,
   GetPreInstallationById,
   UpdatePreInstallation,
   DeletePreInstallation,
-  GetAllPreInstallationsOverview
+  GetAllPreInstallationsOverview,
+  CopyPreInstallation
 };

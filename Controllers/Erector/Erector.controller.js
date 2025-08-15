@@ -233,12 +233,71 @@ const DeleteErector = async (req, res) => {
 };
 
 
+const CopyErector = async (req, res) => {
+  try {
+    const { id } = req.query; 
+
+    const existingErector = await Erector.findById(id);
+    if (!existingErector) {
+      return ErrorHandler(res, 404, "Erector not found");
+    }
+
+    const existingTerms = await InstallationTerms.findOne({ erector_id: id });
+    const existingPayments = await PaymentRecord.find({ erector_id: id });
+
+    const erectorData = existingErector.toObject();
+    delete erectorData._id;
+    delete erectorData.createdAt;
+    delete erectorData.updatedAt;
+
+    const newErector = await Erector.create(erectorData);
+    const newErectorId = newErector._id;
+
+    let newTerms = null;
+    if (existingTerms) {
+      const termsData = existingTerms.toObject();
+      delete termsData._id;
+      delete termsData.createdAt;
+      delete termsData.updatedAt;
+      termsData.erector_id = newErectorId;
+      newTerms = await InstallationTerms.create(termsData);
+    }
+
+  
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findById(newErector.project_id).select('site_name');
+
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'COPY_ERECTOR',
+      type: 'Create',
+      description: `User ${user_details.name} copied an erector record in project "${projectDetails.site_name}".`,
+      title: 'Erector Copied',
+      project_id: newErector.project_id,
+    });
+
+    return ResponseOk(res, 201, "Erector copied successfully", {
+      erector: newErector,
+      installation_terms: newTerms,
+      payment_records: newPayments,
+    });
+
+  } catch (error) {
+    console.error("[CopyErector]", error);
+    return ErrorHandler(res, 500, "Failed to copy erector", error);
+  }
+};
+
+
 module.exports = {
   CreateErector,
   UpdateErector,
   GetAllErectors,
   DeleteErector,
   GetErectorsById,
-  GetErectorsOverview
+  GetErectorsOverview,
+  CopyErector
 };
 
