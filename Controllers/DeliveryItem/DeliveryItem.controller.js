@@ -296,6 +296,65 @@ const DeliveryFormOverview = async (req, res) => {
 }
 
 
+
+const CopyDeliveryForm = async (req, res) => {
+  try {
+    const { id } = req.query; 
+
+    const existingForm = await DeliveryListForm.findById(id);
+    if (!existingForm) {
+      return ErrorHandler(res, 404, "Delivery form not found");
+    }
+
+    const existingSubForms = await DeliveryListSubForm.find({ parent_form_id: id });
+
+    const formData = existingForm.toObject();
+    delete formData._id;
+    delete formData.createdAt;
+    delete formData.updatedAt;
+
+    const newForm = await DeliveryListForm.create(formData);
+    const newFormId = newForm._id;
+
+    let newSubForms = [];
+    if (existingSubForms.length > 0) {
+      const subFormData = existingSubForms.map(sf => {
+        const obj = sf.toObject();
+        delete obj._id;
+        delete obj.createdAt;
+        delete obj.updatedAt;
+        obj.parent_form_id = newFormId;
+        return obj;
+      });
+      newSubForms = await DeliveryListSubForm.insertMany(subFormData);
+    }
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findById(newForm.project_id).select('site_name');
+
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'COPY_DELIVERY_FORM',
+      type: 'Create',
+      description: `User ${user_details.name} copied delivery form "${existingForm.form_name}" to a new form "${newForm.form_name}" in project "${projectDetails.site_name}".`,
+      title: 'Delivery Form Copied',
+      project_id: newForm.project_id,
+    });
+
+    return ResponseOk(res, 201, "Delivery form copied successfully", {
+      deliveryForm: newForm,
+      subForms: newSubForms
+    });
+
+  } catch (error) {
+    console.error("[CopyDeliveryForm]", error);
+    return ErrorHandler(res, 500, "Failed to copy delivery form", error);
+  }
+};
+
+
+
 module.exports = {
   CreateDeliveryForm,
   DeleteDeliveryForm,
@@ -303,5 +362,6 @@ module.exports = {
   GetAllDeliveryForms,
   GetDeliveryFormById,
   GetDeliveryFormsByProjectId,
-  DeliveryFormOverview
+  DeliveryFormOverview,
+  CopyDeliveryForm
 }

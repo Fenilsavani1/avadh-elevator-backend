@@ -1,7 +1,7 @@
 const { Router } = require("express");
 
 const { PreInstallation } = require('../../Models/Project.model')
-const { CreatePreInstallation, UpdatePreInstallation, GetAllPreInstallations, GetPreInstallationById, DeletePreInstallation, GetAllPreInstallationsOverview } = require("../../Controllers/PreInstallation/PreInstall.controller");
+const { CreatePreInstallation, UpdatePreInstallation, GetAllPreInstallations, GetPreInstallationById, DeletePreInstallation, GetAllPreInstallationsOverview, CopyPreInstallation } = require("../../Controllers/PreInstallation/PreInstall.controller");
 const upload = require("../../Utils/ImageUtils");
 
 
@@ -13,5 +13,6 @@ PreInstallRouter.get('/get_pre_install_all', GetAllPreInstallations);
 PreInstallRouter.get('/get_pre_install_by_id', GetPreInstallationById);
 PreInstallRouter.post('/delete_pre_install', DeletePreInstallation);
 PreInstallRouter.get('/get_pre_install_overview', GetAllPreInstallationsOverview);
+PreInstallRouter.post('/copy_pre_install', CopyPreInstallation);
 
 module.exports = PreInstallRouter;

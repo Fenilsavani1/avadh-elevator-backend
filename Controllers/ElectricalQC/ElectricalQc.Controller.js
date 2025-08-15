@@ -268,11 +268,51 @@ const GetQCEntriesOverview = async (req, res) => {
 }
 
 
+const CopyQCEntry = async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    const existingQC = await QCEntry.findById(id);
+    if (!existingQC) {
+      return ErrorHandler(res, 404, "QC Entry not found");
+    }
+
+    const qcData = existingQC.toObject();
+    delete qcData._id;
+    delete qcData.createdAt;
+    delete qcData.updatedAt;
+
+    const newQC = await QCEntry.create(qcData);
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findById(newQC.project_id).select('site_name');
+
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'COPY_ELECTRICAL_QC',
+      type: 'Create',
+      description: `User ${user_details.name} copied electrical QC "${existingQC.qc_name}" to a new entry "${newQC.qc_name}" in project "${projectDetails.site_name}".`,
+      title: 'Electrical QC Copied',
+      project_id: newQC.project_id,
+    });
+
+    return ResponseOk(res, 201, "QC Entry copied successfully", newQC);
+
+  } catch (error) {
+    console.error("[CopyQCEntry]", error);
+    return ErrorHandler(res, 500, "Failed to copy QC Entry", error.message || error);
+  }
+};
+
+
+
 module.exports = {
   CreateQCEntry,
   GetQCEntries,
   GetQCEntriesById,
   GetQCEntriesOverview,
   UpdateQCEntry,
-  DeleteQcEntry
+  DeleteQcEntry,
+  CopyQCEntry
 };

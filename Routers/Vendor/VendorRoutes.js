@@ -1,7 +1,7 @@
 const { Router } = require("express");
 
 const MaterialSet = require("../../Models/Project.model");
-const { CreateMaterialSet, AddVendor, GetMaterialSets, GetVendor, UpdateVendor, DeleteVendor, UpdateMaterialSet, DeleteMaterialSet, GetMaterialSetsByid, GetMaterialSetsOverview, GetVendorById } = require("../../Controllers/Vendor/Vendor.Controller");
+const { CreateMaterialSet, AddVendor, GetMaterialSets, GetVendor, UpdateVendor, DeleteVendor, UpdateMaterialSet, DeleteMaterialSet, GetMaterialSetsByid, GetMaterialSetsOverview, GetVendorById, CopyMaterialSet } = require("../../Controllers/Vendor/Vendor.Controller");
 
 
 const VendorRouter = Router();
@@ -12,6 +12,7 @@ VendorRouter.get('/get_material_set', GetMaterialSets);
 VendorRouter.post('/delete_material_set', DeleteMaterialSet);
 VendorRouter.get('/get_material_set_by_id', GetMaterialSetsByid);
 VendorRouter.get('/get_material_set_overview', GetMaterialSetsOverview);
+VendorRouter.post('/copy_material_set', CopyMaterialSet);
 
 
 VendorRouter.post('/add_vendor', AddVendor);
