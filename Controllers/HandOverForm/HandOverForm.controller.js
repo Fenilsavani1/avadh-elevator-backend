@@ -46,7 +46,8 @@ const CreateHandOverForm = async (req, res) => {
       erectorName,
       wireManName,
       project_id,
-      files
+      files,
+      name
     });
 
     const complaints = [];
@@ -311,11 +312,71 @@ const DeleteHandOverForm = async (req, res) => {
   }
 }
 
+
+
+const CopyHandOverForm = async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    const existingForm = await HandOverForm.findById(id);
+    if (!existingForm) {
+      return ErrorHandler(res, 404, "HandOver form not found");
+    }
+
+    const existingComplaints = await ComplaintForm.find({ hand_over_form_id: id });
+
+    const formData = existingForm.toObject();
+    delete formData._id;
+    delete formData.createdAt;
+    delete formData.updatedAt;
+
+    const newForm = await HandOverForm.create(formData);
+    const newFormId = newForm._id;
+
+    let newComplaints = [];
+    if (existingComplaints.length > 0) {
+      const complaintData = existingComplaints.map(c => {
+        const obj = c.toObject();
+        delete obj._id;
+        delete obj.createdAt;
+        delete obj.updatedAt;
+        obj.hand_over_form_id = newFormId;
+        return obj;
+      });
+      newComplaints = await ComplaintForm.insertMany(complaintData);
+    }
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findById(newForm.project_id).select('site_name');
+
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'COPY_HANDOVER_FORM',
+      type: 'Create',
+      description: `User ${user_details.name} copied a handover form "${existingForm.name || existingForm.jobNumber}" in project "${projectDetails.site_name}".`,
+      title: 'HandOver Form Copied',
+      project_id: newForm.project_id,
+    });
+
+    return ResponseOk(res, 201, "HandOver form copied successfully", {
+      form: newForm,
+      complaints: newComplaints
+    });
+
+  } catch (error) {
+    console.error("[CopyHandOverForm]", error);
+    return ErrorHandler(res, 500, "Failed to copy HandOver form", error);
+  }
+};
+
+
 module.exports = {
   CreateHandOverForm,
   GetHandOverForm,
   UpdateHandOverForm,
   DeleteHandOverForm,
   GetHandOverFormById,
-  GetHandOverFormOverview
+  GetHandOverFormOverview,
+  CopyHandOverForm
 };

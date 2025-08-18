@@ -354,11 +354,74 @@ const DeleteMechanicalQC = async (req, res) => {
     return ErrorHandler(res, 500, "Failed to delete mechanical_qc", error.message || error);
   }
 }
+
+const CopyMechanicalQC = async (req, res) => {
+  try {
+    const { id } = req.query; 
+    if (!id) {
+      return ErrorHandler(res, 400, "ID is required to copy mechanical_qc");
+    }
+
+    const existingForm = await MeachanicalQc.findById(id);
+    if (!existingForm) {
+      return ErrorHandler(res, 404, "Mechanical QC form not found");
+    }
+
+    const existingSubForms = await MeachanicalQcForm.find({ parent_form_id: id });
+
+    const formData = existingForm.toObject();
+    delete formData._id;
+    delete formData.createdAt;
+    delete formData.updatedAt;
+
+    const newForm = await MeachanicalQc.create(formData);
+    const newFormId = newForm._id;
+
+    let newSubForms = [];
+    if (existingSubForms.length > 0) {
+      const subFormData = existingSubForms.map(sf => {
+        const obj = sf.toObject();
+        delete obj._id;
+        delete obj.createdAt;
+        delete obj.updatedAt;
+        obj.parent_form_id = newFormId;
+        return obj;
+      });
+      newSubForms = await MeachanicalQcForm.insertMany(subFormData);
+    }
+
+    const user_details = await Users.findById(req.auth.id);
+    const projectDetails = await Project.findById(newForm.project_id).select("site_name");
+
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details?.name || "Unknown User",
+      action: "COPY_MECHANICAL_QC",
+      type: "Create",
+      description: `User ${user_details.name} copied a mechanical QC form in project ${projectDetails.site_name}.`,
+      title: "Mechanical QC Form Copied",
+      project_id: newForm.project_id,
+    });
+
+    return ResponseOk(res, 201, "Mechanical QC form copied successfully", {
+      form: newForm,
+      subForms: newSubForms,
+    });
+
+  } catch (error) {
+    console.error("Error copying mechanical_qc:", error);
+    return ErrorHandler(res, 500, "Failed to copy mechanical_qc", error.message || error);
+  }
+};
+
+
+
 module.exports = {
   CreateMechanicalQC,
   UpdateMechanicalQC,
   GetMechanicalQCByID,
   GetMechanicalQCAll,
   GetMechanicalQCOveriview,
-  DeleteMechanicalQC
+  DeleteMechanicalQC,
+  CopyMechanicalQC
 }
