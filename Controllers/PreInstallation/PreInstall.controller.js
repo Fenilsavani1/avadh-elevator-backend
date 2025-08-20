@@ -5,6 +5,7 @@ const fs = require("fs");
 const { ActivityLog } = require("../../Models/Activitylog.model");
 const { Project } = require("../../Models/Project.model");
 const { Users } = require("../../Models/User.model");
+const {Elevators} = require("../../Models/Project.model")
 
 const CreatePreInstallation = async (req, res) => {
   try {
@@ -287,6 +288,22 @@ const CopyPreInstallation = async (req, res) => {
 };
 
 
+const LiftDropdown = async (req,res) =>{
+  try {
+      const projectId = req.query.project_id;
+      const elevator_list = await Elevators.find({ project_id: projectId })
+            .select("_id project_id elevator_name");
+        if (!elevator_list) {
+            return ErrorHandler(res, 404, "Elevator not found");
+        }
+         return ResponseOk(res, 200, "Elevator list retrieved successfully", elevator_list);
+  } catch (error) {
+     console.error("Error Lift dropdown", error);
+    return ErrorHandler(res, 500, "Failed to show lift dropdown", error.message || error);
+  }
+}
+
+
 module.exports = {
   CreatePreInstallation,
   GetAllPreInstallations,
@@ -294,5 +311,6 @@ module.exports = {
   UpdatePreInstallation,
   DeletePreInstallation,
   GetAllPreInstallationsOverview,
-  CopyPreInstallation
+  CopyPreInstallation,
+  LiftDropdown
 };
