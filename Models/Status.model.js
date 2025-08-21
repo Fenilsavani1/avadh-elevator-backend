@@ -9,7 +9,7 @@ const StatusTypeSchema = new mongoose.Schema({
   data_name: {
     type: String,
     required: true,
-    enum: ['Pending', 'Approved', 'Rejected'] // Example status names
+    enum: ['Pending', 'Approved', 'Rejected'] 
     },
 }, {
   versionKey: false,

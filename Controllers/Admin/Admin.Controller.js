@@ -3,6 +3,9 @@ const { Roles, Role_with_permission, User_Associate_With_Role } = require('../..
 const { Users } = require('../../Models/User.model')
 const { Permissions } = require('../../Models/User.model');
 const { Project } = require('../../Models/Project.model');
+const { Static_Data_Schema } = require('../../Models/StaticData.model');
+const { ActivityLog } = require('../../Models/Activitylog.model');
+const { Elevators } = require('../../Models/Project.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -11,7 +14,6 @@ const mongoose = require('mongoose');
 
 
 const LoginAdmin = async (req, res) => {
-  console.log("User is:", typeof Users); // should be 'function'
   const { email, contact_number, password } = req.body;
 
   if (!password || (!email && !contact_number)) {
@@ -26,7 +28,6 @@ const LoginAdmin = async (req, res) => {
 
 
   try {
-    // console.log("User model is", User);
     const user = await Users.findOne({
       $or: [
         { email },
@@ -34,7 +35,6 @@ const LoginAdmin = async (req, res) => {
       ]
     });
 
-    console.log("user", user);
     if (!user) {
       return ErrorHandler(res, 404, 'User not found');
     }
@@ -106,7 +106,7 @@ const GetListOfRole = async (req, res) => {
   }
 };
 
-const getRolePermissions = async (req, res) => {
+const GetRolePermissions = async (req, res) => {
   try {
     const roleId = parseInt(req.query.role_id);
 
@@ -114,17 +114,14 @@ const getRolePermissions = async (req, res) => {
       return ErrorHandler(res, 400, "Role ID is required");
     }
 
-    // Step 1: Find the role
     const role = await Roles.findOne({ id: roleId });
     if (!role) {
       return ErrorHandler(res, 404, "Role not found");
     }
 
-    // Step 2: Get all permissions assigned to the role
     const rolePermissionLinks = await Role_with_permission.find({ role_id: roleId });
     const permissionIds = rolePermissionLinks.map(rp => rp.permission_id);
 
-    // Step 3: Get permission details
     const permissions = await Permissions.find({ id: { $in: permissionIds } });
     console.log("firstname", permissions);
 
@@ -132,7 +129,6 @@ const getRolePermissions = async (req, res) => {
       return ErrorHandler(res, 404, "No permissions found for this role");
     }
 
-    // Step 4: Build final result
     const result = {
       role_id: role.id,
       role_name: role.name,
@@ -175,6 +171,20 @@ const GetUserById = async (req, res) => {
   }
 };
 
+const GetUserAll = async (req, res) => {
+  try {
+
+    const user = await Users.find().select('id name email contact_number');
+    if (!user) {
+      return ErrorHandler(res, 404, "User not found");
+    }
+    return ResponseOk(res, 200, "User retrieved successfully", user);
+  } catch (error) {
+    console.error("GetUserById Error:", error);
+    return ErrorHandler(res, 500, "Server error while retrieving user");
+  }
+};
+
 const AddAdminUser = async (req, res) => {
   try {
     const { email, role_id, password, contact_number, name } = req.body;
@@ -184,7 +194,6 @@ const AddAdminUser = async (req, res) => {
     }
 
 
-    // Check if user with email already exists and is not deleted
     const existingUser = await Users.findOne({
       email: email,
       is_deleted: 0,
@@ -195,10 +204,9 @@ const AddAdminUser = async (req, res) => {
     }
 
 
-    // Create new user
     const newUser = await Users.create({
       email: email,
-      password: password, // Assuming password will be hashed via pre-save middleware
+      password: password,
       contact_number: contact_number,
       name: name,
     });
@@ -208,6 +216,19 @@ const AddAdminUser = async (req, res) => {
       user_id: newUser._id,
       is_allowed_email: 1,
     });
+    const user_details = await Users.findById(req.auth.id)
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'ADD_USER',
+      type: 'Create',
+      description: `User with name ${name} was added with role ID ${role_id}.`,
+      title: 'User Added',
+      project_id: null,
+    });
+
+
+
 
     return ResponseOk(res, 200, newUser, "User added successfully");
   } catch (error) {
@@ -216,18 +237,16 @@ const AddAdminUser = async (req, res) => {
   }
 };
 
-
 const UpdateAdminUser = async (req, res) => {
   try {
-    const { email, role_id, contact_number, name } = req.body;
-    const userRoleId = req.query.id; // This is the _id of User_Associate_With_Role document
+    const { email, role_id, contact_number, name, password } = req.body;
+    const userRoleId = req.query.id;
 
     if (!email || !role_id || !contact_number || !name) {
       return ErrorHandler(res, 400, "All fields (name, email, contact_number, role_id) are required");
     }
 
-    // Find the user-role association
-    const existingUserRole = await User_Associate_With_Role.findById(userRoleId);
+    const existingUserRole = await User_Associate_With_Role.findOne({ user_id: userRoleId });
 
     if (!existingUserRole) {
       return ErrorHandler(res, 404, "User association not found");
@@ -235,7 +254,6 @@ const UpdateAdminUser = async (req, res) => {
 
     const userId = existingUserRole.user_id;
 
-    // Check for email conflict with another user
     const emailConflict = await Users.findOne({
       _id: { $ne: userId },
       email: email,
@@ -246,17 +264,29 @@ const UpdateAdminUser = async (req, res) => {
       return ErrorHandler(res, 400, "Another user with this email already exists");
     }
 
-    // Update User
     await Users.findByIdAndUpdate(userId, {
       email,
       contact_number,
       name,
     });
-
-    // Update Role Association
+    const user = await Users.findById(userId);
+    user.password = password;
+    await user.save();
     await User_Associate_With_Role.findByIdAndUpdate(userRoleId, {
       role_id: parseInt(role_id),
     });
+
+    const user_details = await Users.findById(req.auth.id)
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'UPDATE_USER',
+      type: 'Update',
+      description: `User with profile name as ${name}has been updated.`,
+      title: 'User Updated',
+      project_id: null,
+    });
+
 
     return ResponseOk(res, 200, "User updated successfully");
   } catch (error) {
@@ -267,14 +297,13 @@ const UpdateAdminUser = async (req, res) => {
 
 const DeleteAdminUser = async (req, res) => {
   try {
-    const userRoleId = req.query.id; // ID of the User_Associate_With_Role document
+    const userRoleId = req.query.id;
 
     if (!userRoleId) {
       return ErrorHandler(res, 400, "User role association ID is required");
     }
 
-    // Find the user-role association
-    const existingUserRole = await User_Associate_With_Role.findById(userRoleId);
+    const existingUserRole = await User_Associate_With_Role.findOne({ user_id: userRoleId });
 
     if (!existingUserRole) {
       return ErrorHandler(res, 404, "User role association not found");
@@ -282,9 +311,21 @@ const DeleteAdminUser = async (req, res) => {
 
     const userId = existingUserRole.user_id;
 
-    // Permanently delete the user and role association
     await Users.findByIdAndDelete(userId);
+    const user_details = await Users.findById(userId)
     await User_Associate_With_Role.findByIdAndDelete(userRoleId);
+
+    await ActivityLog.create({
+      user_id: req.auth?.id || null,
+      user_name: user_details.name,
+      action: 'DELETE_ADMIN_USER',
+      type: 'Delete',
+      description: `User with profile name as ${user_details.name} was permanently deleted.`,
+      title: 'User Deleted',
+      project_id: null,
+    });
+
+
 
     return ResponseOk(res, 200, "User permanently deleted");
   } catch (error) {
@@ -297,19 +338,27 @@ const AddRolesByAdmin = async (req, res) => {
   try {
     const { id, name } = req.body;
 
-    // Validate input
     if (!id || !name) {
       return ErrorHandler(res, 400, "Both 'id' and 'name' are required.");
     }
 
-    // Check if role with same id or name exists
     const existingRole = await Roles.findOne({ $or: [{ id }, { name }] });
     if (existingRole) {
       return ErrorHandler(res, 400, "Role with this ID or name already exists.");
     }
 
-    // Create new role
     const newRole = await Roles.create({ id, name });
+
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'CREATE_ROLE',
+      type: 'Message_Response',
+      sub_type: 'Create',
+      message: `New role "${name}" was created.`,
+      title: 'Role Created',
+      project_id: null,
+    });
+
 
     return ResponseOk(res, 200, "Role created successfully", newRole);
   } catch (error) {
@@ -336,6 +385,17 @@ const UpdateRole = async (req, res) => {
       return ErrorHandler(res, 404, "Role not found.");
     }
 
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'UPDATE_ROLE',
+      type: 'Message_Response',
+      sub_type: 'Update',
+      message: `Role ID ${id} was updated to name "${name}".`,
+      title: 'Role Updated',
+      project_id: null,
+    });
+
+
     return ResponseOk(res, 200, "Role updated successfully", updatedRole);
   } catch (error) {
     console.error("UpdateRole Error:", error);
@@ -356,6 +416,17 @@ const DeleteRole = async (req, res) => {
     if (!deletedRole) {
       return ErrorHandler(res, 404, "Role not found or already deleted.");
     }
+
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'DELETE_ROLE',
+      type: 'Message_Response',
+      sub_type: 'Delete',
+      message: `Role with ID ${id} was deleted.`,
+      title: 'Role Deleted',
+      project_id: null,
+    });
+
 
     return ResponseOk(res, 200, "Role deleted successfully", deletedRole);
   } catch (error) {
@@ -381,15 +452,24 @@ const UpdatePermissionAdmin = async (req, res) => {
       return ErrorHandler(res, 400, "Either enable_permissions or disable_permissions must be true.");
     }
 
-    // Use bulk update instead of Promise.all
     await Permissions.updateMany(
       { id: { $in: permission_ids } },
       { $set: { status: updateStatus } }
     );
 
-    return res.status(200).json({
-      message: `Permissions ${updateStatus === 1 ? 'enabled' : 'disabled'} successfully.`,
-      updated_ids: permission_ids,
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'UPDATE_PERMISSIONS',
+      type: 'Message_Response',
+      sub_type: updateStatus === 1 ? 'Enable' : 'Disable',
+      message: `Permissions ${updateStatus === 1 ? 'enabled' : 'disabled'}: [${permission_ids.join(', ')}]`,
+      title: `Permissions ${updateStatus === 1 ? 'Enabled' : 'Disabled'}`,
+      project_id: null,
+    });
+
+    return ResponseOk(res, 200, "Permissions updated successfully", {
+      updated_permissions: permission_ids,
+      status: updateStatus === 1 ? "enabled" : "disabled"
     });
 
   } catch (error) {
@@ -407,7 +487,7 @@ const UpdateProjectStatus = async (req, res) => {
       return ErrorHandler(res, 400, "Project ID and status are required");
     }
 
-    const validStatuses = [1, 2, 3]; // Assuming 1: pending, 2: approved, 3: rejected
+    const validStatuses = [1, 2, 3];
     if (!validStatuses.includes(status)) {
       return ErrorHandler(res, 400, "Invalid status value");
     }
@@ -422,31 +502,22 @@ const UpdateProjectStatus = async (req, res) => {
       return ErrorHandler(res, 404, "Project not found");
     }
 
+    const site_name = updatedProject.site_name || 'Unknown Project';
+
+    await ActivityLog.create({
+      user_id: req.user?._id || null,
+      action: 'UPDATE_PROJECT_STATUS',
+      type: 'Message_Response',
+      sub_type: 'Update',
+      message: `Project  ${site_name} status updated to ${status}.`,
+      title: 'Project Status Updated',
+    });
+
+
     return ResponseOk(res, 200, "Project status updated successfully", updatedProject);
   } catch (error) {
     console.error("[UpdateProjectStatus]", error);
     return ErrorHandler(res, 500, "Server error while updating project status");
-  }
-};
-
-const DeleteProject = async (req, res) => {
-  try {
-    const projectId = req.query.projectId;
-
-    if (!projectId) {
-      return ErrorHandler(res, 400, "Project ID is required");
-    }
-
-    const deletedProject = await Project.findByIdAndDelete(projectId);
-
-    if (!deletedProject) {
-      return ErrorHandler(res, 404, "Project not found");
-    }
-
-    return ResponseOk(res, 200, "Project deleted successfully", deletedProject);
-  } catch (error) {
-    console.error("[DeleteProject]", error);
-    return ErrorHandler(res, 500, "Server error while deleting project");
   }
 };
 
@@ -471,14 +542,182 @@ const ViewProjectById = async (req, res) => {
   }
 };
 
+const ManageRolePermissions = async (req, res) => {
+  try {
+    const { role_id, add_permission_ids = [], remove_permission_ids = [] } = req.body;
 
+    if (!role_id) {
+      return ErrorHandler(res, 400, "role_id is required.");
+    }
 
+    if (!Array.isArray(add_permission_ids) || !Array.isArray(remove_permission_ids)) {
+      return ErrorHandler(res, 400, "add_permission_ids and remove_permission_ids must be arrays.");
+    }
+
+    // Check if role exists
+    const roleExists = await Roles.findOne({ id: role_id });
+    if (!roleExists) {
+      return ErrorHandler(res, 404, "Role not found.");
+    }
+
+    // Validate added permissions
+    let addedPermissionIds = [];
+    if (add_permission_ids.length > 0) {
+      const validAddPermissions = await Permissions.find({ id: { $in: add_permission_ids } });
+      addedPermissionIds = validAddPermissions.map(p => p.id);
+
+      if (addedPermissionIds.length !== add_permission_ids.length) {
+        return ErrorHandler(res, 400, "One or more add_permission_ids are invalid.");
+      }
+
+      // Avoid duplicates (only insert if not already linked)
+      const existingLinks = await Role_with_permission.find({
+        role_id,
+        permission_id: { $in: addedPermissionIds }
+      });
+      const existingPermissionIds = existingLinks.map(link => link.permission_id);
+
+      const newLinks = addedPermissionIds
+        .filter(pid => !existingPermissionIds.includes(pid))
+        .map(pid => ({ role_id, permission_id: pid }));
+
+      if (newLinks.length > 0) {
+        await Role_with_permission.insertMany(newLinks);
+      }
+    }
+
+    // Remove permissions
+    if (remove_permission_ids.length > 0) {
+      await Role_with_permission.deleteMany({
+        role_id,
+        permission_id: { $in: remove_permission_ids }
+      });
+    }
+
+    const updatedLinks = await Role_with_permission.find({ role_id });
+    const finalPermissions = await Permissions.find({ id: { $in: updatedLinks.map(rp => rp.permission_id) } });
+
+    return ResponseOk(res, 200, "Role permissions updated successfully", {
+      role_id,
+      current_permissions: finalPermissions.map(p => ({
+        id: p.id,
+        permission_name: p.permission_name
+      }))
+    });
+
+  } catch (error) {
+    console.error("Error:", error);
+    return ErrorHandler(res, 500, "Server error while managing role permissions");
+  }
+};
+
+const GetStaticData = async (req, res) => {
+  try {
+    const { type } = req.query;
+
+    const filter = {};
+    if (type) {
+      filter.type = Number(type);
+    }
+    if (isNaN(filter.type)) {
+      return ErrorHandler(res, 400, "Invalid type parameter");
+    }
+
+    const staticData = await Static_Data_Schema.find(filter);
+
+    return ResponseOk(res, 200, "Static data fetched successfully", staticData);
+  } catch (error) {
+    console.error("Error fetching static data:", error);
+    return ErrorHandler(res, 500, "Failed to fetch static data", error);
+  }
+};
+
+const DashboardKPI = async (req, res) => {
+  try {
+
+    const ProjectCount = await Project.countDocuments();
+    const TotalElevators = await Elevators.countDocuments();
+
+    return ResponseOk(res, 200, "Dashboard KPIs fetched successfully", {
+      ProjectCount,
+      TotalElevators
+    });
+  } catch (error) {
+    console.error("Error in DashboardKPI:", error);
+    return ErrorHandler(res, 500, "Failed to fetch dashboard KPIs");
+  }
+}
+
+const GetProjectListDashboard = async (req, res) => {
+  try {
+    const projects = await Project.aggregate([
+      {
+        $lookup: {
+          from: "paymententries",
+          localField: "_id",
+          foreignField: "project_id",
+          as: "payment_details"
+        }
+      },
+      {
+        $addFields: {
+          amount_received: {
+            $sum: "$payment_details.payment_Made"
+          }
+        }
+      },
+      {
+        $addFields: {
+          amount_remaining: {
+            $subtract: ["$payment_amount", "$amount_received"]
+          },
+          payment_progress: {
+            $cond: [
+              { $gt: ["$payment_amount", 0] },
+              {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$amount_received", "$payment_amount"] },
+                      100
+                    ]
+                  },
+                  2
+                ]
+              },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          site_name: 1,
+          payment_amount: 1,
+          amount_received: 1,
+          amount_remaining: 1,
+          payment_progress: 1,
+        }
+      }
+    ]);
+
+    if (!projects || projects.length === 0) {
+      return ErrorHandler(res, 404, "No projects found");
+    }
+    return ResponseOk(res, 200, "Projects retrieved successfully", projects);
+  } catch (error) {
+    console.error("Error in GetProjectShortDetails:", error);
+    return ErrorHandler(res, 500, "Failed to retrieve project short details", error);
+
+  }
+}
 
 module.exports = {
   LoginAdmin,
   GetPermissionAdmin,
   GetListOfRole,
-  getRolePermissions,
+  GetRolePermissions,
   GetUserById,
   AddAdminUser,
   UpdateAdminUser,
@@ -488,6 +727,10 @@ module.exports = {
   DeleteRole,
   UpdatePermissionAdmin,
   UpdateProjectStatus,
-  DeleteProject,
-  ViewProjectById
+  ViewProjectById,
+  ManageRolePermissions,
+  GetStaticData,
+  GetUserAll,
+  DashboardKPI,
+  GetProjectListDashboard
 }
